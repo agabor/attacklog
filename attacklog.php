@@ -15,10 +15,10 @@ define( 'ALW_PLUGIN_FILE', __FILE__ );
 define( 'ALW_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'ALW_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
-require_once ALW_PLUGIN_DIR . 'includes/class-cf-ip-manager.php';
-require_once ALW_PLUGIN_DIR . 'includes/class-cf-request-filter.php';
-require_once ALW_PLUGIN_DIR . 'includes/class-cf-logger.php';
-require_once ALW_PLUGIN_DIR . 'includes/class-cf-admin-page.php';
+require_once ALW_PLUGIN_DIR . 'includes/class-alw-ip-manager.php';
+require_once ALW_PLUGIN_DIR . 'includes/class-alw-request-filter.php';
+require_once ALW_PLUGIN_DIR . 'includes/class-alw-logger.php';
+require_once ALW_PLUGIN_DIR . 'includes/class-alw-admin-page.php';
 
 class Attacklog_WP {
 
@@ -36,18 +36,18 @@ class Attacklog_WP {
 	}
 
 	public static function activate() {
-		CF_IP_Manager::update_ip_ranges();
-		CF_IP_Manager::schedule_cron();
+		ALW_IP_Manager::update_ip_ranges();
+		ALW_IP_Manager::schedule_cron();
 	}
 
 	public static function deactivate() {
-		CF_IP_Manager::unschedule_cron();
+		ALW_IP_Manager::unschedule_cron();
 	}
 
 	public function init() {
-		CF_Request_Filter::init();
-		CF_Admin_Page::init();
-		add_action( 'alw_daily_ip_refresh', array( 'CF_IP_Manager', 'cron_update' ) );
+		ALW_Request_Filter::init();
+		ALW_Admin_Page::init();
+		add_action( 'alw_daily_ip_refresh', array( 'ALW_IP_Manager', 'cron_update' ) );
 	}
 }
 

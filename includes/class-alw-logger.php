@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class CF_Logger {
+class ALW_Logger {
 
 	const MAX_LOG_ENTRIES = 500;
 

@@ -4,7 +4,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class CF_IP_Manager {
+class ALW_IP_Manager {
 
 	public static function fetch_ip_ranges() {
 		$ipv4 = array();

@@ -4,12 +4,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class CF_Admin_Page {
+class ALW_Admin_Page {
 
 	public static function init() {
-		add_action( 'admin_menu', array( 'CF_Admin_Page', 'add_menu' ) );
-		add_action( 'admin_post_alw_clear_logs', array( 'CF_Admin_Page', 'handle_clear_logs' ) );
-		add_action( 'admin_post_alw_update_security_mode', array( 'CF_Admin_Page', 'handle_update_security_mode' ) );
+		add_action( 'admin_menu', array( 'ALW_Admin_Page', 'add_menu' ) );
+		add_action( 'admin_post_alw_clear_logs', array( 'ALW_Admin_Page', 'handle_clear_logs' ) );
+		add_action( 'admin_post_alw_update_security_mode', array( 'ALW_Admin_Page', 'handle_update_security_mode' ) );
 	}
 
 	public static function add_menu() {
@@ -18,7 +18,7 @@ class CF_Admin_Page {
 			'Attack Log',
 			'manage_options',
 			'attacklog',
-			array( 'CF_Admin_Page', 'render_page' )
+			array( 'ALW_Admin_Page', 'render_page' )
 		);
 	}
 
@@ -27,11 +27,11 @@ class CF_Admin_Page {
 			return;
 		}
 
-		$logs = CF_Logger::get_logs();
-		$current_security_mode = CF_Request_Filter::get_security_mode();
-		$current_ip = CF_Request_Filter::get_client_ip();
-		$current_ip_is_cloudflare = ! empty( $current_ip ) ? CF_Request_Filter::is_cloudflare_ip( $current_ip ) : false;
-		$present_cloudflare_headers = CF_Request_Filter::get_present_cloudflare_headers();
+		$logs = ALW_Logger::get_logs();
+		$current_security_mode = ALW_Request_Filter::get_security_mode();
+		$current_ip = ALW_Request_Filter::get_client_ip();
+		$current_ip_is_cloudflare = ! empty( $current_ip ) ? ALW_Request_Filter::is_cloudflare_ip( $current_ip ) : false;
+		$present_cloudflare_headers = ALW_Request_Filter::get_present_cloudflare_headers();
 		$has_cloudflare_headers = ! empty( $present_cloudflare_headers );
 
 		$forwarded_for_header = isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) : '';
@@ -164,7 +164,7 @@ class CF_Admin_Page {
 			wp_die( 'You do not have permission to perform this action.' );
 		}
 
-		CF_Logger::clear_logs();
+		ALW_Logger::clear_logs();
 
 		wp_safe_redirect( admin_url( 'tools.php?page=attacklog' ) );
 		exit;

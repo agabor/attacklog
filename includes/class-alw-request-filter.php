@@ -4,12 +4,12 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-class CF_Request_Filter {
+class ALW_Request_Filter {
 
 	const LOGGED_STATUS_CODES = array( 401, 403, 404, 500 );
 
 	public static function init() {
-		add_action( 'shutdown', array( 'CF_Request_Filter', 'maybe_log_response' ) );
+		add_action( 'shutdown', array( 'ALW_Request_Filter', 'maybe_log_response' ) );
 	}
 
 	public static function maybe_log_response() {
@@ -33,7 +33,7 @@ class CF_Request_Filter {
 		$forbidden_headers = self::get_forbidden_headers();
 		$cloudflare_status = self::get_cloudflare_status_label( $client_ip );
 
-		CF_Logger::log( $client_ip, $request_uri, $user_agent, $forbidden_headers, $status_code, $cloudflare_status );
+		ALW_Logger::log( $client_ip, $request_uri, $user_agent, $forbidden_headers, $status_code, $cloudflare_status );
 	}
 
 	public static function get_cloudflare_status_label( $ip ) {
@@ -122,7 +122,7 @@ class CF_Request_Filter {
 	}
 
 	public static function is_cloudflare_ip( $ip ) {
-		$ranges = CF_IP_Manager::get_ip_ranges();
+		$ranges = ALW_IP_Manager::get_ip_ranges();
 
 		$is_ipv6 = strpos( $ip, ':' ) !== false;
 
