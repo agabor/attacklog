@@ -19,6 +19,10 @@ class CF_Request_Filter {
 			return;
 		}
 
+		if ( 'none' === self::get_security_mode() ) {
+			return;
+		}
+
 		$client_ip = self::get_client_ip();
 
 		if ( empty( $client_ip ) ) {
@@ -43,27 +47,35 @@ class CF_Request_Filter {
 			return array( 'IP is not from Cloudflare' );
 		}
 
+		$security_mode = self::get_security_mode();
+
+		if ( 'reduced' === $security_mode ) {
+			return self::check_cloudflare_headers_present();
+		}
+
 		$is_ip_cloudflare = self::is_cloudflare_ip( $client_ip );
 
 		if ( $is_ip_cloudflare ) {
 			return true;
 		}
 
-		$reasons = array( 'IP is not from Cloudflare' );
+		return self::check_cloudflare_headers_present();
+	}
 
-		if ( self::is_reduced_security_mode() ) {
-			$header_map = self::get_cloudflare_header_map();
-			$present_headers = self::get_present_cloudflare_headers();
+	private static function check_cloudflare_headers_present() {
+		$header_map = self::get_cloudflare_header_map();
+		$present_headers = self::get_present_cloudflare_headers();
 
-			$missing_header_labels = array_diff( array_keys( $header_map ), array_keys( $present_headers ) );
+		$missing_header_labels = array_diff( array_keys( $header_map ), array_keys( $present_headers ) );
 
-			if ( empty( $missing_header_labels ) ) {
-				return true;
-			}
+		if ( empty( $missing_header_labels ) ) {
+			return true;
+		}
 
-			foreach ( $missing_header_labels as $missing_header_label ) {
-				$reasons[] = $missing_header_label . ' header is missing';
-			}
+		$reasons = array();
+
+		foreach ( $missing_header_labels as $missing_header_label ) {
+			$reasons[] = $missing_header_label . ' header is missing';
 		}
 
 		return $reasons;
@@ -97,8 +109,14 @@ class CF_Request_Filter {
 		return $present;
 	}
 
-	public static function is_reduced_security_mode() {
-		return '1' === get_option( 'cfow_reduced_security_mode', '0' );
+	public static function get_security_mode() {
+		$mode = get_option( 'cfow_security_mode', 'strict' );
+
+		if ( ! in_array( $mode, array( 'strict', 'reduced', 'none' ), true ) ) {
+			return 'strict';
+		}
+
+		return $mode;
 	}
 
 	public static function get_client_ip() {
@@ -108,25 +126,7 @@ class CF_Request_Filter {
 		return '';
 	}
 
-	public static function get_forwarded_for_ips() {
-		if ( isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) {
-			$header = sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) );
-			$ips = explode( ',', $header );
-			$trimmed_ips = array();
-
-			foreach ( $ips as $ip ) {
-				$trimmed_ip = trim( $ip );
-				if ( ! empty( $trimmed_ip ) ) {
-					$trimmed_ips[] = $trimmed_ip;
-				}
-			}
-
-			return $trimmed_ips;
-		}
-		return array();
-	}
-
-	public static function get_forbidden_headers() {
+    public static function get_forbidden_headers() {
 		$header_map = array(
 			'CF-Connecting-IP'    => 'HTTP_CF_CONNECTING_IP',
 			'CF-IPCountry'        => 'HTTP_CF_IPCOUNTRY',

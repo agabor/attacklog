@@ -9,7 +9,7 @@ class CF_Admin_Page {
 	public static function init() {
 		add_action( 'admin_menu', array( 'CF_Admin_Page', 'add_menu' ) );
 		add_action( 'admin_post_cfow_clear_logs', array( 'CF_Admin_Page', 'handle_clear_logs' ) );
-		add_action( 'admin_post_cfow_toggle_reduced_security_mode', array( 'CF_Admin_Page', 'handle_toggle_reduced_security_mode' ) );
+		add_action( 'admin_post_cfow_update_security_mode', array( 'CF_Admin_Page', 'handle_update_security_mode' ) );
 	}
 
 	public static function add_menu() {
@@ -27,10 +27,8 @@ class CF_Admin_Page {
 			return;
 		}
 
-		$ranges = CF_IP_Manager::get_ip_ranges();
-		$last_updated = CF_IP_Manager::get_last_updated();
 		$logs = CF_Logger::get_logs();
-		$is_reduced_security_mode = CF_Request_Filter::is_reduced_security_mode();
+		$current_security_mode = CF_Request_Filter::get_security_mode();
 		$current_ip = CF_Request_Filter::get_client_ip();
 		$current_ip_is_cloudflare = ! empty( $current_ip ) ? CF_Request_Filter::is_cloudflare_ip( $current_ip ) : false;
 		$present_cloudflare_headers = CF_Request_Filter::get_present_cloudflare_headers();
@@ -38,37 +36,31 @@ class CF_Admin_Page {
 
 		$forwarded_for_header = isset( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FORWARDED_FOR'] ) ) : '';
 
+		if ( $current_ip_is_cloudflare ) {
+			$suggested_mode = 'strict';
+		} elseif ( $has_cloudflare_headers ) {
+			$suggested_mode = 'reduced';
+		} else {
+			$suggested_mode = 'none';
+		}
+
+		$suggested_mode_labels = array(
+			'strict'  => 'Strict',
+			'reduced' => 'Reduced',
+			'none'    => 'None',
+		);
+
 		?>
 		<div class="wrap">
 			<h1>Attack Log</h1>
 
-			<h2>Reduced Security Mode</h2>
+			<h2>Logging Level</h2>
 			<div class="notice notice-warning inline">
-				<p><strong>Warning:</strong> The <code>CF-Connecting-IP</code>, <code>CF-IPCountry</code>, <code>CF-Ray</code>, and <code>CF-Visitor</code> headers are normally only set by Cloudflare, but they can be forged by visitors unless your infrastructure guarantees that requests cannot bypass Cloudflare and reach your origin directly. Enabling this mode may allow attackers to bypass Cloudflare IP restrictions by spoofing these headers. Only enable this if you understand the risks and have verified that your origin server is not directly reachable, bypassing Cloudflare.</p>
+				<p><strong>Warning:</strong> The <code>CF-Connecting-IP</code>, <code>CF-IPCountry</code>, <code>CF-Ray</code>, and <code>CF-Visitor</code> headers are normally only set by Cloudflare, but they can be forged by visitors unless your infrastructure guarantees that requests cannot bypass Cloudflare and reach your origin directly. Enabling the Reduced level may allow attackers to bypass Cloudflare IP restrictions by spoofing these headers. Only enable this if you understand the risks and have verified that your origin server is not directly reachable, bypassing Cloudflare.</p>
 			</div>
 			<p>
-				<?php if ( $is_reduced_security_mode ) : ?>
-					Reduced security mode is currently <strong>ON</strong>. Requests that include one or more well-known Cloudflare headers are also treated as coming from Cloudflare.
-				<?php else : ?>
-					Reduced security mode is currently <strong>OFF</strong>. Only the direct connection IP address is checked against Cloudflare's ranges.
-				<?php endif; ?>
-			</p>
-			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<input type="hidden" name="action" value="cfow_toggle_reduced_security_mode" />
-				<?php wp_nonce_field( 'cfow_toggle_reduced_security_mode_action', 'cfow_toggle_reduced_security_mode_nonce' ); ?>
-				<label>
-					<input type="checkbox" name="cfow_reduced_security_mode" value="1" <?php checked( $is_reduced_security_mode ); ?> />
-					Enable Reduced Security Mode
-				</label>
-				<p class="submit">
-					<input type="submit" class="button button-primary" value="Save" />
-				</p>
-			</form>
-
-			<h2>Your Current IP</h2>
-			<p>
-                <strong>IP Address:</strong> <?php echo esc_html( $current_ip ); ?><br />
-                <strong>X-Forwarded-For:</strong> <?php echo esc_html( $forwarded_for_header ); ?><br />
+				<strong>IP Address:</strong> <?php echo esc_html( $current_ip ); ?><br />
+				<strong>X-Forwarded-For:</strong> <?php echo esc_html( $forwarded_for_header ); ?><br />
 				<strong>Within Cloudflare's IP Range:</strong>
 				<?php echo $current_ip_is_cloudflare ? 'Yes' : 'No'; ?><br />
 				<strong>Cloudflare Headers Present:</strong>
@@ -77,16 +69,32 @@ class CF_Admin_Page {
 					<br />
 					<?php echo self::format_log_headers( $present_cloudflare_headers ); ?>
 				<?php endif; ?>
+				<br />
+				<strong>Suggested level:</strong> <?php echo esc_html( $suggested_mode_labels[ $suggested_mode ] ); ?>
 			</p>
-
-			<h2>IP Ranges</h2>
-			<p><strong>Last Updated:</strong> <?php echo esc_html( $last_updated ); ?></p>
-
-			<h3>IPv4 Ranges</h3>
-			<textarea readonly rows="10" style="width:100%;"><?php echo esc_textarea( implode( "\n", $ranges['ipv4'] ) ); ?></textarea>
-
-			<h3>IPv6 Ranges</h3>
-			<textarea readonly rows="10" style="width:100%;"><?php echo esc_textarea( implode( "\n", $ranges['ipv6'] ) ); ?></textarea>
+			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
+				<input type="hidden" name="action" value="cfow_update_security_mode" />
+				<?php wp_nonce_field( 'cfow_update_security_mode_action', 'cfow_update_security_mode_nonce' ); ?>
+				<p>
+					<label>
+						<input type="radio" name="cfow_security_mode" value="strict" <?php checked( 'strict', $current_security_mode ); ?> />
+						Strict
+					</label>
+					<br />
+					<label>
+						<input type="radio" name="cfow_security_mode" value="reduced" <?php checked( 'reduced', $current_security_mode ); ?> />
+						Reduced
+					</label>
+					<br />
+					<label>
+						<input type="radio" name="cfow_security_mode" value="none" <?php checked( 'none', $current_security_mode ); ?> />
+						None
+					</label>
+				</p>
+				<p class="submit">
+					<input type="submit" class="button button-primary" value="Save" />
+				</p>
+			</form>
 
 			<h2>Forbidden Request Logs</h2>
 			<table class="wp-list-table widefat fixed striped">
@@ -160,8 +168,8 @@ class CF_Admin_Page {
 		exit;
 	}
 
-	public static function handle_toggle_reduced_security_mode() {
-		if ( ! isset( $_POST['cfow_toggle_reduced_security_mode_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['cfow_toggle_reduced_security_mode_nonce'] ) ), 'cfow_toggle_reduced_security_mode_action' ) ) {
+	public static function handle_update_security_mode() {
+		if ( ! isset( $_POST['cfow_update_security_mode_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['cfow_update_security_mode_nonce'] ) ), 'cfow_update_security_mode_action' ) ) {
 			wp_die( 'Security check failed.' );
 		}
 
@@ -169,9 +177,13 @@ class CF_Admin_Page {
 			wp_die( 'You do not have permission to perform this action.' );
 		}
 
-		$requested_reduced_security_mode = isset( $_POST['cfow_reduced_security_mode'] ) ? '1' : '0';
+		$requested_security_mode = isset( $_POST['cfow_security_mode'] ) ? sanitize_text_field( wp_unslash( $_POST['cfow_security_mode'] ) ) : 'strict';
 
-		update_option( 'cfow_reduced_security_mode', $requested_reduced_security_mode );
+		if ( ! in_array( $requested_security_mode, array( 'strict', 'reduced', 'none' ), true ) ) {
+			$requested_security_mode = 'strict';
+		}
+
+		update_option( 'cfow_security_mode', $requested_security_mode );
 
 		wp_safe_redirect( admin_url( 'tools.php?page=attacklog' ) );
 		exit;
