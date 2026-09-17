@@ -80,7 +80,7 @@ class CF_Request_Filter {
 	}
 
 	public static function get_security_mode() {
-		$mode = get_option( 'cfow_security_mode', 'strict' );
+		$mode = get_option( 'alw_security_mode', 'strict' );
 
 		if ( ! in_array( $mode, array( 'strict', 'reduced', 'none' ), true ) ) {
 			return 'strict';

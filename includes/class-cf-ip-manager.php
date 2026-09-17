@@ -47,32 +47,32 @@ class CF_IP_Manager {
 			return false;
 		}
 
-		update_option( 'cfow_ipv4_ranges', $ranges['ipv4'] );
-		update_option( 'cfow_ipv6_ranges', $ranges['ipv6'] );
-		update_option( 'cfow_last_updated', current_time( 'mysql' ) );
+		update_option( 'alw_ipv4_ranges', $ranges['ipv4'] );
+		update_option( 'alw_ipv6_ranges', $ranges['ipv6'] );
+		update_option( 'alw_last_updated', current_time( 'mysql' ) );
 
 		return true;
 	}
 
 	public static function get_ip_ranges() {
 		return array(
-			'ipv4' => get_option( 'cfow_ipv4_ranges', array() ),
-			'ipv6' => get_option( 'cfow_ipv6_ranges', array() ),
+			'ipv4' => get_option( 'alw_ipv4_ranges', array() ),
+			'ipv6' => get_option( 'alw_ipv6_ranges', array() ),
 		);
 	}
 
 	public static function get_last_updated() {
-		return get_option( 'cfow_last_updated', '' );
+		return get_option( 'alw_last_updated', '' );
 	}
 
 	public static function schedule_cron() {
-		if ( ! wp_next_scheduled( 'cfow_daily_ip_refresh' ) ) {
-			wp_schedule_event( time(), 'daily', 'cfow_daily_ip_refresh' );
+		if ( ! wp_next_scheduled( 'alw_daily_ip_refresh' ) ) {
+			wp_schedule_event( time(), 'daily', 'alw_daily_ip_refresh' );
 		}
 	}
 
 	public static function unschedule_cron() {
-		wp_clear_scheduled_hook( 'cfow_daily_ip_refresh' );
+		wp_clear_scheduled_hook( 'alw_daily_ip_refresh' );
 	}
 
 	public static function cron_update() {

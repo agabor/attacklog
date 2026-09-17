@@ -8,8 +8,8 @@ class CF_Admin_Page {
 
 	public static function init() {
 		add_action( 'admin_menu', array( 'CF_Admin_Page', 'add_menu' ) );
-		add_action( 'admin_post_cfow_clear_logs', array( 'CF_Admin_Page', 'handle_clear_logs' ) );
-		add_action( 'admin_post_cfow_update_security_mode', array( 'CF_Admin_Page', 'handle_update_security_mode' ) );
+		add_action( 'admin_post_alw_clear_logs', array( 'CF_Admin_Page', 'handle_clear_logs' ) );
+		add_action( 'admin_post_alw_update_security_mode', array( 'CF_Admin_Page', 'handle_update_security_mode' ) );
 	}
 
 	public static function add_menu() {
@@ -73,21 +73,21 @@ class CF_Admin_Page {
 				<strong>Suggested level:</strong> <?php echo esc_html( $suggested_mode_labels[ $suggested_mode ] ); ?>
 			</p>
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<input type="hidden" name="action" value="cfow_update_security_mode" />
-				<?php wp_nonce_field( 'cfow_update_security_mode_action', 'cfow_update_security_mode_nonce' ); ?>
+				<input type="hidden" name="action" value="alw_update_security_mode" />
+				<?php wp_nonce_field( 'alw_update_security_mode_action', 'alw_update_security_mode_nonce' ); ?>
 				<p>
 					<label>
-						<input type="radio" name="cfow_security_mode" value="strict" <?php checked( 'strict', $current_security_mode ); ?> />
+						<input type="radio" name="alw_security_mode" value="strict" <?php checked( 'strict', $current_security_mode ); ?> />
 						Strict
 					</label>
 					<br />
 					<label>
-						<input type="radio" name="cfow_security_mode" value="reduced" <?php checked( 'reduced', $current_security_mode ); ?> />
+						<input type="radio" name="alw_security_mode" value="reduced" <?php checked( 'reduced', $current_security_mode ); ?> />
 						Reduced
 					</label>
 					<br />
 					<label>
-						<input type="radio" name="cfow_security_mode" value="none" <?php checked( 'none', $current_security_mode ); ?> />
+						<input type="radio" name="alw_security_mode" value="none" <?php checked( 'none', $current_security_mode ); ?> />
 						None
 					</label>
 				</p>
@@ -131,8 +131,8 @@ class CF_Admin_Page {
 			</table>
 
 			<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>">
-				<input type="hidden" name="action" value="cfow_clear_logs" />
-				<?php wp_nonce_field( 'cfow_clear_logs_action', 'cfow_clear_logs_nonce' ); ?>
+				<input type="hidden" name="action" value="alw_clear_logs" />
+				<?php wp_nonce_field( 'alw_clear_logs_action', 'alw_clear_logs_nonce' ); ?>
 				<p class="submit">
 					<input type="submit" class="button button-secondary" value="Clear Logs" />
 				</p>
@@ -156,7 +156,7 @@ class CF_Admin_Page {
 	}
 
 	public static function handle_clear_logs() {
-		if ( ! isset( $_POST['cfow_clear_logs_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['cfow_clear_logs_nonce'] ) ), 'cfow_clear_logs_action' ) ) {
+		if ( ! isset( $_POST['alw_clear_logs_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['alw_clear_logs_nonce'] ) ), 'alw_clear_logs_action' ) ) {
 			wp_die( 'Security check failed.' );
 		}
 
@@ -171,7 +171,7 @@ class CF_Admin_Page {
 	}
 
 	public static function handle_update_security_mode() {
-		if ( ! isset( $_POST['cfow_update_security_mode_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['cfow_update_security_mode_nonce'] ) ), 'cfow_update_security_mode_action' ) ) {
+		if ( ! isset( $_POST['alw_update_security_mode_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_POST['alw_update_security_mode_nonce'] ) ), 'alw_update_security_mode_action' ) ) {
 			wp_die( 'Security check failed.' );
 		}
 
@@ -179,13 +179,13 @@ class CF_Admin_Page {
 			wp_die( 'You do not have permission to perform this action.' );
 		}
 
-		$requested_security_mode = isset( $_POST['cfow_security_mode'] ) ? sanitize_text_field( wp_unslash( $_POST['cfow_security_mode'] ) ) : 'strict';
+		$requested_security_mode = isset( $_POST['alw_security_mode'] ) ? sanitize_text_field( wp_unslash( $_POST['alw_security_mode'] ) ) : 'strict';
 
 		if ( ! in_array( $requested_security_mode, array( 'strict', 'reduced', 'none' ), true ) ) {
 			$requested_security_mode = 'strict';
 		}
 
-		update_option( 'cfow_security_mode', $requested_security_mode );
+		update_option( 'alw_security_mode', $requested_security_mode );
 
 		wp_safe_redirect( admin_url( 'tools.php?page=attacklog' ) );
 		exit;

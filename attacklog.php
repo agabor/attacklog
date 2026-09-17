@@ -11,16 +11,16 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-define( 'CFOW_PLUGIN_FILE', __FILE__ );
-define( 'CFOW_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
-define( 'CFOW_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
+define( 'ALW_PLUGIN_FILE', __FILE__ );
+define( 'ALW_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
+define( 'ALW_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
-require_once CFOW_PLUGIN_DIR . 'includes/class-cf-ip-manager.php';
-require_once CFOW_PLUGIN_DIR . 'includes/class-cf-request-filter.php';
-require_once CFOW_PLUGIN_DIR . 'includes/class-cf-logger.php';
-require_once CFOW_PLUGIN_DIR . 'includes/class-cf-admin-page.php';
+require_once ALW_PLUGIN_DIR . 'includes/class-cf-ip-manager.php';
+require_once ALW_PLUGIN_DIR . 'includes/class-cf-request-filter.php';
+require_once ALW_PLUGIN_DIR . 'includes/class-cf-logger.php';
+require_once ALW_PLUGIN_DIR . 'includes/class-cf-admin-page.php';
 
-class Cloudflare_Only_WP {
+class Attacklog_WP {
 
 	private static $instance = null;
 
@@ -47,10 +47,10 @@ class Cloudflare_Only_WP {
 	public function init() {
 		CF_Request_Filter::init();
 		CF_Admin_Page::init();
-		add_action( 'cfow_daily_ip_refresh', array( 'CF_IP_Manager', 'cron_update' ) );
+		add_action( 'alw_daily_ip_refresh', array( 'CF_IP_Manager', 'cron_update' ) );
 	}
 }
 
-register_activation_hook( CFOW_PLUGIN_FILE, array( 'Cloudflare_Only_WP', 'activate' ) );
-register_deactivation_hook( CFOW_PLUGIN_FILE, array( 'Cloudflare_Only_WP', 'deactivate' ) );
-add_action( 'plugins_loaded', array( 'Cloudflare_Only_WP', 'instance' ) );
+register_activation_hook( ALW_PLUGIN_FILE, array( 'Attacklog_WP', 'activate' ) );
+register_deactivation_hook( ALW_PLUGIN_FILE, array( 'Attacklog_WP', 'deactivate' ) );
+add_action( 'plugins_loaded', array( 'Attacklog_WP', 'instance' ) );
