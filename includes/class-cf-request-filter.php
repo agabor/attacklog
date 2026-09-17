@@ -6,11 +6,13 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 class CF_Request_Filter {
 
+	const LOGGED_STATUS_CODES = array( 401, 403, 404, 500 );
+
 	public static function init() {
-		add_action( 'init', array( 'CF_Request_Filter', 'check_request' ), 1 );
+		add_action( 'shutdown', array( 'CF_Request_Filter', 'maybe_log_response' ) );
 	}
 
-	public static function check_request() {
+	public static function maybe_log_response() {
 		if ( defined( 'WP_CLI' ) && WP_CLI ) {
 			return;
 		}
@@ -19,66 +21,34 @@ class CF_Request_Filter {
 			return;
 		}
 
-		if ( 'none' === self::get_security_mode() ) {
+		$status_code = http_response_code();
+
+		if ( ! in_array( $status_code, self::LOGGED_STATUS_CODES, true ) ) {
 			return;
 		}
 
 		$client_ip = self::get_client_ip();
+		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
+		$forbidden_headers = self::get_forbidden_headers();
+		$cloudflare_status = self::get_cloudflare_status_label( $client_ip );
 
-		if ( empty( $client_ip ) ) {
-			return;
-		}
-
-		$cloudflare_check = self::is_effective_request_cloudflare();
-
-		if ( true !== $cloudflare_check ) {
-			$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
-			$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
-			$forbidden_headers = self::get_forbidden_headers();
-			$reason = implode( ' ', $cloudflare_check );
-			CF_Logger::log( $client_ip, $request_uri, $user_agent, $forbidden_headers, $reason );
-		}
+		CF_Logger::log( $client_ip, $request_uri, $user_agent, $forbidden_headers, $status_code, $cloudflare_status );
 	}
 
-	public static function is_effective_request_cloudflare() {
-		$client_ip = self::get_client_ip();
+	public static function get_cloudflare_status_label( $ip ) {
+		$ip_in_range = ! empty( $ip ) && self::is_cloudflare_ip( $ip );
+		$headers_present = self::has_cloudflare_headers();
 
-		if ( empty( $client_ip ) ) {
-			return array( 'IP is not from Cloudflare' );
+		if ( $ip_in_range && $headers_present ) {
+			return 'Yes';
 		}
 
-		$security_mode = self::get_security_mode();
-
-		if ( 'reduced' === $security_mode ) {
-			return self::check_cloudflare_headers_present();
+		if ( $headers_present && ! $ip_in_range ) {
+			return 'Maybe';
 		}
 
-		$is_ip_cloudflare = self::is_cloudflare_ip( $client_ip );
-
-		if ( $is_ip_cloudflare ) {
-			return true;
-		}
-
-		return self::check_cloudflare_headers_present();
-	}
-
-	private static function check_cloudflare_headers_present() {
-		$header_map = self::get_cloudflare_header_map();
-		$present_headers = self::get_present_cloudflare_headers();
-
-		$missing_header_labels = array_diff( array_keys( $header_map ), array_keys( $present_headers ) );
-
-		if ( empty( $missing_header_labels ) ) {
-			return true;
-		}
-
-		$reasons = array();
-
-		foreach ( $missing_header_labels as $missing_header_label ) {
-			$reasons[] = $missing_header_label . ' header is missing';
-		}
-
-		return $reasons;
+		return 'No';
 	}
 
 	public static function get_cloudflare_header_map() {
