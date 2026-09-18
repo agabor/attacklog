@@ -32,10 +32,18 @@ class ALW_Request_Filter {
 
 		$client_ip = self::get_client_ip();
 		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
+		$request_method = self::get_request_method();
 		$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
 		$forbidden_headers = self::get_forbidden_headers();
 
-		ALW_Logger::log( $client_ip, $request_uri, $user_agent, $forbidden_headers, $status_code, $missing_indicators );
+		ALW_Logger::log( $client_ip, $request_uri, $user_agent, $forbidden_headers, $status_code, $missing_indicators, $request_method );
+	}
+
+	public static function get_request_method() {
+		if ( isset( $_SERVER['REQUEST_METHOD'] ) ) {
+			return sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) );
+		}
+		return '';
 	}
 
 	public static function get_current_cloudflare_indicators() {

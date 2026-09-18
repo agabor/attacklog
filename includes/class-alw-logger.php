@@ -8,13 +8,14 @@ class ALW_Logger {
 
 	const MAX_LOG_ENTRIES = 500;
 
-	public static function log( $ip, $request_uri, $user_agent, $headers = array(), $status_code = '', $missing_indicators = array() ) {
+	public static function log( $ip, $request_uri, $user_agent, $headers = array(), $status_code = '', $missing_indicators = array(), $method = '' ) {
 		$logs = get_option( 'alw_logs', array() );
 
 		$logs[] = array(
 			'timestamp'          => current_time( 'mysql' ),
 			'ip'                 => $ip,
 			'uri'                => $request_uri,
+			'method'             => $method,
 			'user_agent'         => $user_agent,
 			'headers'            => $headers,
 			'status'             => $status_code,

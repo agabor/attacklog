@@ -40,6 +40,8 @@ class ALW_Admin_Page {
 
 		$baseline_indicators = get_option( 'alw_admin_cloudflare_indicators', array() );
 
+		$user_agent_counts = self::get_user_agent_counts( $logs );
+
 		?>
 		<div class="wrap">
 			<h1>Attack Log</h1>
@@ -76,12 +78,37 @@ class ALW_Admin_Page {
 				<?php endif; ?>
 			</p>
 
+			<h2>Requests by User Agent</h2>
+			<table class="wp-list-table widefat fixed striped">
+				<thead>
+					<tr>
+						<th>User Agent</th>
+						<th>Request Count</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php if ( empty( $user_agent_counts ) ) : ?>
+						<tr>
+							<td colspan="2">No logs found.</td>
+						</tr>
+					<?php else : ?>
+						<?php foreach ( $user_agent_counts as $user_agent => $count ) : ?>
+							<tr>
+								<td><?php echo esc_html( '' !== $user_agent ? $user_agent : '(empty)' ); ?></td>
+								<td><?php echo esc_html( $count ); ?></td>
+							</tr>
+						<?php endforeach; ?>
+					<?php endif; ?>
+				</tbody>
+			</table>
+
 			<h2>Forbidden Request Logs</h2>
 			<table class="wp-list-table widefat fixed striped">
 				<thead>
 					<tr>
 						<th>Timestamp</th>
 						<th>IP Address</th>
+						<th>Method</th>
 						<th>Request URI</th>
 						<th>User Agent</th>
 						<th>HTTP Status</th>
@@ -92,13 +119,14 @@ class ALW_Admin_Page {
 				<tbody>
 					<?php if ( empty( $logs ) ) : ?>
 						<tr>
-							<td colspan="7">No logs found.</td>
+							<td colspan="8">No logs found.</td>
 						</tr>
 					<?php else : ?>
 						<?php foreach ( $logs as $entry ) : ?>
 							<tr>
 								<td><?php echo esc_html( $entry['timestamp'] ); ?></td>
 								<td><?php echo esc_html( $entry['ip'] ); ?></td>
+								<td><?php echo esc_html( isset( $entry['method'] ) ? $entry['method'] : '' ); ?></td>
 								<td><?php echo esc_html( $entry['uri'] ); ?></td>
 								<td><?php echo esc_html( isset( $entry['user_agent'] ) ? $entry['user_agent'] : '' ); ?></td>
 								<td><?php echo esc_html( isset( $entry['status'] ) ? $entry['status'] : '' ); ?></td>
@@ -119,6 +147,28 @@ class ALW_Admin_Page {
 			</form>
 		</div>
 		<?php
+	}
+
+	private static function get_user_agent_counts( $logs ) {
+		if ( empty( $logs ) || ! is_array( $logs ) ) {
+			return array();
+		}
+
+		$counts = array();
+
+		foreach ( $logs as $entry ) {
+			$user_agent = isset( $entry['user_agent'] ) ? $entry['user_agent'] : '';
+
+			if ( ! isset( $counts[ $user_agent ] ) ) {
+				$counts[ $user_agent ] = 0;
+			}
+
+			$counts[ $user_agent ]++;
+		}
+
+		arsort( $counts );
+
+		return $counts;
 	}
 
 	private static function format_log_headers( $headers ) {
