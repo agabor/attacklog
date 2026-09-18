@@ -1,75 +1,73 @@
 === Attack Log ===
 Contributors: gaborangyal
-Tags: cloudflare, security, firewall, ip restriction, access control
+Tags: cloudflare, security, logging, monitoring, ip
 Requires at least: 5.0
-Tested up to: 6.7
+Tested up to: 7.1
 Requires PHP: 7.0
 Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Restricts site access to Cloudflare IP ranges, refreshes those ranges daily via cron, and provides an admin Tools page to view ranges and forbidden-request logs.
+Refreshes Cloudflare's published IP ranges daily via cron and logs suspicious requests, providing an admin Tools page to review Cloudflare indicators and forbidden-request logs.
 
 == Description ==
 
-**WARNING: Only use this plugin if you really know what you are doing.** This plugin restricts access to your WordPress site to Cloudflare's published IP ranges only. If misconfigured, or if your site is not properly configured behind Cloudflare, this plugin **can lock you and all other visitors out of your site**, including the WordPress admin area. Use at your own risk. Always test with Test Mode enabled first, and ensure you have another way to access your server (such as SSH or FTP) to disable the plugin if something goes wrong.
+Attack Log fetches Cloudflare's official published IP ranges (both IPv4 and IPv6) and stores them, refreshing them daily via a scheduled cron event. It does not block any requests. Instead, it monitors incoming requests and logs ones that appear suspicious, so you can review them from the WordPress admin area.
 
-Attack Log compares each visitor's IP address against Cloudflare's official published IP ranges (both IPv4 and IPv6). If a request does not originate from one of these ranges, it is logged and, unless Test Mode is enabled, blocked with a 403 Forbidden response.
+A request is logged when any of the following are true:
 
-**This plugin requires the "Remove visitor IP headers" Managed Transform to be enabled in your Cloudflare dashboard.** Without this setting, visitors could potentially spoof headers to bypass this restriction, or the plugin may not correctly identify the true visitor IP. This plugin relies solely on `REMOTE_ADDR` and does not read `X-Forwarded-For` or `CF-Connecting-IP` headers for access decisions, precisely because those headers can be spoofed unless Cloudflare is configured to strip them from incoming requests before they reach your origin server.
+* The HTTP response status code is 401, 403, 404, or 500.
+* The User-Agent header matches a list of known non-browser clients (such as curl, Wget, various HTTP client libraries, and common scanning tools).
+* A Cloudflare indicator that was present on a previous admin page visit (such as the visitor's IP being within Cloudflare's range, the X-Forwarded-For header containing a Cloudflare IP, or a specific Cloudflare HTTP header being present) is missing on the current request, or a Cloudflare indicator appears that was not present before.
 
-To enable this setting:
-
-1. Log in to your Cloudflare dashboard.
-2. Select your domain.
-3. Navigate to Rules > Managed Transforms.
-4. Enable "Remove visitor IP headers".
+Each log entry records the timestamp, IP address, HTTP method, request URI, User-Agent, HTTP status code, any forwarded/Cloudflare-related headers present on the request, and the specific flags that caused the entry to be logged.
 
 = Features =
 
-* Automatically fetches and stores Cloudflare's current IPv4 and IPv6 ranges.
-* Daily cron job to keep IP ranges up to date.
-* Test Mode to log would-be blocked requests without actually blocking them, so you can verify correct behavior before enforcing restrictions.
-* Safeguard preventing Test Mode from being disabled if your current IP is not within Cloudflare's IP range, reducing the risk of accidental lockout.
-* Admin Tools page displaying current IP ranges, last update time, your current IP and whether it is recognized as a Cloudflare IP, and a log of forbidden requests.
-* Ability to clear logs from the admin page.
+* Automatically fetches and stores Cloudflare's current IPv4 and IPv6 ranges on activation and daily via cron.
+* Logs requests with suspicious HTTP status codes, suspicious User-Agent strings, or missing/unexpected Cloudflare indicators.
+* Admin Tools page (Tools > Attack Log) displaying:
+  * Current Cloudflare indicators for the request loading the admin page (IP address, X-Forwarded-For header, whether the IP is within Cloudflare's range, whether X-Forwarded-For contains a Cloudflare IP, and which Cloudflare-specific headers are present).
+  * Baseline Cloudflare indicators, saved automatically each time the admin page is viewed, used as the reference point for detecting missing or unexpected indicators on other requests.
+  * A summary table of logged requests grouped by User-Agent with request counts.
+  * A detailed table of individual logged requests, including timestamp, IP, method, URI, User-Agent, status, headers, and flags.
+* Ability to clear all logs from the admin page.
 
 = Important Notes =
 
-* This plugin blocks requests very early, on the `init` hook, before most of WordPress has loaded.
-* Requests from WP-CLI and WordPress Cron (`DOING_CRON`) are never blocked, to avoid breaking scheduled tasks and command-line operations.
-* If Cloudflare's IP ranges cannot be fetched, the plugin will fail open (allow all requests) for that IP family (IPv4 or IPv6) rather than blocking everyone, but this should not be relied upon as a safety mechanism.
-* Test Mode is enabled by default on activation to help prevent accidental lockouts. Review the logs before disabling Test Mode.
+* This plugin does not block, restrict, or otherwise interfere with any requests. It is a monitoring and logging tool only.
+* Logging occurs on the `shutdown` hook, after the response has already been generated.
+* Requests made via WP-CLI or WordPress's cron system (`DOING_CRON`) are never logged.
+* Visiting the Attack Log admin page updates the "baseline" Cloudflare indicators used for comparison against other requests. Because of this, the baseline reflects whatever indicators were present the last time an administrator viewed the page.
+* If Cloudflare's IP ranges cannot be fetched, or have not been fetched yet for an IP family (IPv4 or IPv6), IP-range membership checks for that family will be treated as matching (fail open), since this plugin does not use IP-range membership to block anything.
 
 == Installation ==
 
 1. Upload the plugin files to the `/wp-content/plugins/attacklog` directory, or install the plugin through the WordPress plugins screen directly.
 2. Activate the plugin through the 'Plugins' screen in WordPress.
-3. In your Cloudflare dashboard, enable the "Remove visitor IP headers" Managed Transform under Rules > Managed Transforms.
-4. Go to Tools > Attack Log to review the fetched IP ranges and confirm your current IP is recognized as a Cloudflare IP.
-5. Leave Test Mode enabled and monitor the logs for a period of time before disabling Test Mode to enforce blocking.
+3. Go to Tools > Attack Log to review Cloudflare indicators and the request log.
 
 == Frequently Asked Questions ==
 
-= What happens if I get locked out? =
+= Does this plugin block any requests? =
 
-If you are locked out, you will need another way to access your server, such as SFTP, SSH, or your hosting control panel's file manager, to rename or delete the plugin folder, which will deactivate it.
+No. This plugin only logs requests that meet certain suspicious criteria (unusual HTTP status codes, suspicious User-Agent strings, or missing/unexpected Cloudflare indicators). It does not deny or restrict access to your site in any way.
 
-= Why does the plugin only check REMOTE_ADDR and not X-Forwarded-For or CF-Connecting-IP? =
+= Where do the Cloudflare IP ranges come from? =
 
-Headers such as `X-Forwarded-For` and `CF-Connecting-IP` can be spoofed by visitors unless your server or CDN strips them from incoming requests. This plugin relies on `REMOTE_ADDR`, which is the actual TCP connection IP address seen by your web server. For this to correctly reflect the visitor's real IP when behind Cloudflare, you must enable Cloudflare's "Remove visitor IP headers" Managed Transform, which ensures Cloudflare properly sets `REMOTE_ADDR` at the connection level and strips potentially spoofed headers.
+The plugin fetches them directly from `https://www.cloudflare.com/ips-v4/` and `https://www.cloudflare.com/ips-v6/`, and refreshes them daily via a scheduled cron event named `alw_daily_ip_refresh`.
 
-= Does this replace a firewall? =
+= What are "baseline indicators" on the admin page? =
 
-No. This plugin is a supplementary access control layer at the application level and should not be considered a replacement for a properly configured firewall or other server-level security measures.
+Each time an administrator loads the Attack Log admin page, the plugin records which Cloudflare-related indicators (IP range membership, X-Forwarded-For range membership, and presence of specific Cloudflare headers) were present on that admin request. Subsequent requests are compared against this baseline, and any indicator that was present in the baseline but missing on a later request (or vice versa) is flagged and logged.
 
 = Will this affect WP-CLI or cron jobs? =
 
-No. Requests made via WP-CLI or WordPress's cron system (`DOING_CRON`) are explicitly excluded from IP filtering.
+No. Requests made via WP-CLI or WordPress's cron system (`DOING_CRON`) are explicitly excluded from logging.
 
 == Screenshots ==
 
-1. Admin Tools page showing Test Mode toggle, current IP status, IP ranges, and forbidden request logs.
+1. Admin Tools page showing current and baseline Cloudflare indicators, User-Agent request counts, and the suspicious request log.
 
 == Changelog ==
 
@@ -79,4 +77,4 @@ No. Requests made via WP-CLI or WordPress's cron system (`DOING_CRON`) are expli
 == Upgrade Notice ==
 
 = 1.0.0 =
-Initial release. Please read the plugin description carefully before activating, and ensure the "Remove visitor IP headers" Managed Transform is enabled in Cloudflare.
+Initial release.

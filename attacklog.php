@@ -1,8 +1,11 @@
 <?php
 /**
  * Plugin Name: Attack Log
- * Description: Restricts site access to Cloudflare IP ranges, refreshes those ranges daily via cron, and provides an admin Tools page to view ranges and forbidden-request logs.
+ * Description: Fetches and refreshes Cloudflare's published IP ranges daily via cron, monitors incoming requests for suspicious activity, and provides an admin Tools page to view Cloudflare indicators and suspicious-request logs.
  * Version: 1.0.0
+ * Requires at least: 5.0
+ * Requires PHP: 7.0
+ * Tested up to: 7.1
  * Author: Gabor Angyal
  * Author URI: https://webshop.tech
  */
