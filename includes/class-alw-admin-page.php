@@ -41,6 +41,7 @@ class ALW_Admin_Page {
 		$baseline_indicators = get_option( 'alw_admin_cloudflare_indicators', array() );
 
 		$user_agent_counts = self::get_user_agent_counts( $logs );
+		$request_uri_counts = self::get_request_uri_counts( $logs );
 
 		?>
 		<div class="wrap">
@@ -95,6 +96,30 @@ class ALW_Admin_Page {
 						<?php foreach ( $user_agent_counts as $user_agent => $count ) : ?>
 							<tr>
 								<td><?php echo esc_html( '' !== $user_agent ? $user_agent : '(empty)' ); ?></td>
+								<td><?php echo esc_html( $count ); ?></td>
+							</tr>
+						<?php endforeach; ?>
+					<?php endif; ?>
+				</tbody>
+			</table>
+
+			<h2>Requests by Request URI</h2>
+			<table class="wp-list-table widefat fixed striped">
+				<thead>
+					<tr>
+						<th>Request URI</th>
+						<th>Request Count</th>
+					</tr>
+				</thead>
+				<tbody>
+					<?php if ( empty( $request_uri_counts ) ) : ?>
+						<tr>
+							<td colspan="2">No logs found.</td>
+						</tr>
+					<?php else : ?>
+						<?php foreach ( $request_uri_counts as $request_uri => $count ) : ?>
+							<tr>
+								<td><?php echo esc_html( '' !== $request_uri ? $request_uri : '(empty)' ); ?></td>
 								<td><?php echo esc_html( $count ); ?></td>
 							</tr>
 						<?php endforeach; ?>
@@ -164,6 +189,28 @@ class ALW_Admin_Page {
 			}
 
 			$counts[ $user_agent ]++;
+		}
+
+		arsort( $counts );
+
+		return $counts;
+	}
+
+	private static function get_request_uri_counts( $logs ) {
+		if ( empty( $logs ) || ! is_array( $logs ) ) {
+			return array();
+		}
+
+		$counts = array();
+
+		foreach ( $logs as $entry ) {
+			$request_uri = isset( $entry['uri'] ) ? $entry['uri'] : '';
+
+			if ( ! isset( $counts[ $request_uri ] ) ) {
+				$counts[ $request_uri ] = 0;
+			}
+
+			$counts[ $request_uri ]++;
 		}
 
 		arsort( $counts );
