@@ -8,17 +8,18 @@ class ALW_Logger {
 
 	const MAX_LOG_ENTRIES = 500;
 
-	public static function log( $ip, $request_uri, $user_agent, $headers = array(), $status_code = '', $cloudflare_status = '' ) {
+	public static function log( $ip, $request_uri, $user_agent, $headers = array(), $status_code = '', $cloudflare_status = '', $missing_indicators = array() ) {
 		$logs = get_option( 'alw_logs', array() );
 
 		$logs[] = array(
-			'timestamp'  => current_time( 'mysql' ),
-			'ip'         => $ip,
-			'uri'        => $request_uri,
-			'user_agent' => $user_agent,
-			'headers'    => $headers,
-			'status'     => $status_code,
-			'cf_status'  => $cloudflare_status,
+			'timestamp'          => current_time( 'mysql' ),
+			'ip'                 => $ip,
+			'uri'                => $request_uri,
+			'user_agent'         => $user_agent,
+			'headers'            => $headers,
+			'status'             => $status_code,
+			'cf_status'          => $cloudflare_status,
+			'missing_indicators' => $missing_indicators,
 		);
 
 		if ( count( $logs ) > self::MAX_LOG_ENTRIES ) {
