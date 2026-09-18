@@ -8,6 +8,41 @@ class ALW_Request_Filter {
 
 	const LOGGED_STATUS_CODES = array( 401, 403, 404, 500 );
 
+	const SUSPICIOUS_USER_AGENT_PATTERNS = array(
+		'python-requests',
+		'python-urllib',
+		'aiohttp',
+		'curl',
+		'Wget',
+		'libwww-perl',
+		'Go-http-client',
+		'Java/',
+		'okhttp',
+		'node-fetch',
+		'axios',
+		'PostmanRuntime',
+		'Scrapy',
+		'HTTPie',
+		'Apache-HttpClient',
+		'GuzzleHttp',
+		'Faraday',
+		'RestSharp',
+		'insomnia',
+		'Jakarta Commons-HttpClient',
+		'masscan',
+		'Nmap',
+		'Nikto',
+		'sqlmap',
+		'libcurl',
+		'Ruby',
+		'PHP/',
+		'PycURL',
+		'Zgrab',
+		'Go-http-client',
+		'Dart/',
+		'Deno/',
+	);
+
 	public static function init() {
 		add_action( 'shutdown', array( 'ALW_Request_Filter', 'maybe_log_response' ) );
 	}
@@ -24,19 +59,39 @@ class ALW_Request_Filter {
 		$status_code = http_response_code();
 		$status_matches = in_array( $status_code, self::LOGGED_STATUS_CODES, true );
 
-		$missing_indicators = self::get_missing_indicators();
+		$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
+		$matched_suspicious_pattern = self::get_matched_suspicious_user_agent( $user_agent );
 
-		if ( ! $status_matches && empty( $missing_indicators ) ) {
+		$flags = self::get_missing_indicators();
+
+		if ( '' !== $matched_suspicious_pattern ) {
+			$flags[] = 'Suspicious User Agent (' . $matched_suspicious_pattern . ')';
+		}
+
+		if ( ! $status_matches && empty( $flags ) ) {
 			return;
 		}
 
 		$client_ip = self::get_client_ip();
 		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 		$request_method = self::get_request_method();
-		$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
 		$forbidden_headers = self::get_forbidden_headers();
 
-		ALW_Logger::log( $client_ip, $request_uri, $user_agent, $forbidden_headers, $status_code, $missing_indicators, $request_method );
+		ALW_Logger::log( $client_ip, $request_uri, $user_agent, $forbidden_headers, $status_code, $flags, $request_method );
+	}
+
+	public static function get_matched_suspicious_user_agent( $user_agent ) {
+		if ( '' === trim( $user_agent ) ) {
+			return '';
+		}
+
+		foreach ( self::SUSPICIOUS_USER_AGENT_PATTERNS as $pattern ) {
+			if ( false !== stripos( $user_agent, $pattern ) ) {
+				return $pattern;
+			}
+		}
+
+		return '';
 	}
 
 	public static function get_request_method() {

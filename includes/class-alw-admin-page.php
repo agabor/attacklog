@@ -60,7 +60,7 @@ class ALW_Admin_Page {
 				<?php echo $has_cloudflare_headers ? 'Yes' : 'No'; ?>
 				<?php if ( $has_cloudflare_headers ) : ?>
 					<br />
-					<?php echo self::format_log_headers( $present_cloudflare_headers ); ?>
+					<?php echo self::format_headers( $present_cloudflare_headers ); ?>
 				<?php endif; ?>
 			</p>
 
@@ -102,7 +102,7 @@ class ALW_Admin_Page {
 				</tbody>
 			</table>
 
-			<h2>Forbidden Request Logs</h2>
+			<h2>Suspicious Request Log</h2>
 			<table class="wp-list-table widefat fixed striped">
 				<thead>
 					<tr>
@@ -113,7 +113,7 @@ class ALW_Admin_Page {
 						<th>User Agent</th>
 						<th>HTTP Status</th>
 						<th>Headers</th>
-						<th>Missing Indicators</th>
+						<th>Flags</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -130,8 +130,8 @@ class ALW_Admin_Page {
 								<td><?php echo esc_html( $entry['uri'] ); ?></td>
 								<td><?php echo esc_html( isset( $entry['user_agent'] ) ? $entry['user_agent'] : '' ); ?></td>
 								<td><?php echo esc_html( isset( $entry['status'] ) ? $entry['status'] : '' ); ?></td>
-								<td><?php echo self::format_log_headers( isset( $entry['headers'] ) ? $entry['headers'] : array() ); ?></td>
-								<td><?php echo self::format_missing_indicators( isset( $entry['missing_indicators'] ) ? $entry['missing_indicators'] : array() ); ?></td>
+								<td><?php echo self::format_headers( isset( $entry['headers'] ) ? $entry['headers'] : array() ); ?></td>
+								<td><?php echo self::format_flags( isset( $entry['flags'] ) ? $entry['flags'] : array() ); ?></td>
 							</tr>
 						<?php endforeach; ?>
 					<?php endif; ?>
@@ -171,7 +171,7 @@ class ALW_Admin_Page {
 		return $counts;
 	}
 
-	private static function format_log_headers( $headers ) {
+	private static function format_headers( $headers ) {
 		if ( empty( $headers ) || ! is_array( $headers ) ) {
 			return '';
 		}
@@ -185,14 +185,14 @@ class ALW_Admin_Page {
 		return implode( '<br />', $lines );
 	}
 
-	private static function format_missing_indicators( $missing_indicators ) {
-		if ( empty( $missing_indicators ) || ! is_array( $missing_indicators ) ) {
+	private static function format_flags( $flags ) {
+		if ( empty( $flags ) || ! is_array( $flags ) ) {
 			return '';
 		}
 
 		$lines = array();
 
-		foreach ( $missing_indicators as $label ) {
+		foreach ( $flags as $label ) {
 			$lines[] = esc_html( $label );
 		}
 
