@@ -34,9 +34,8 @@ class ALW_Request_Filter {
 		$request_uri = isset( $_SERVER['REQUEST_URI'] ) ? sanitize_text_field( wp_unslash( $_SERVER['REQUEST_URI'] ) ) : '';
 		$user_agent = isset( $_SERVER['HTTP_USER_AGENT'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) ) : '';
 		$forbidden_headers = self::get_forbidden_headers();
-		$cloudflare_status = self::get_cloudflare_status_label( $client_ip );
 
-		ALW_Logger::log( $client_ip, $request_uri, $user_agent, $forbidden_headers, $status_code, $cloudflare_status, $missing_indicators );
+		ALW_Logger::log( $client_ip, $request_uri, $user_agent, $forbidden_headers, $status_code, $missing_indicators );
 	}
 
 	public static function get_current_cloudflare_indicators() {
@@ -108,21 +107,6 @@ class ALW_Request_Filter {
 		}
 
 		return $missing;
-	}
-
-	public static function get_cloudflare_status_label( $ip ) {
-		$ip_in_range = ! empty( $ip ) && self::is_cloudflare_ip( $ip );
-		$headers_present = self::has_cloudflare_headers();
-
-		if ( $ip_in_range && $headers_present ) {
-			return 'Yes';
-		}
-
-		if ( $headers_present && ! $ip_in_range ) {
-			return 'Maybe';
-		}
-
-		return 'No';
 	}
 
 	public static function get_cloudflare_header_map() {

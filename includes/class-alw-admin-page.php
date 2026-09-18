@@ -85,7 +85,6 @@ class ALW_Admin_Page {
 						<th>Request URI</th>
 						<th>User Agent</th>
 						<th>HTTP Status</th>
-						<th>Cloudflare Status</th>
 						<th>Headers</th>
 						<th>Missing Indicators</th>
 					</tr>
@@ -93,7 +92,7 @@ class ALW_Admin_Page {
 				<tbody>
 					<?php if ( empty( $logs ) ) : ?>
 						<tr>
-							<td colspan="8">No logs found.</td>
+							<td colspan="7">No logs found.</td>
 						</tr>
 					<?php else : ?>
 						<?php foreach ( $logs as $entry ) : ?>
@@ -103,7 +102,6 @@ class ALW_Admin_Page {
 								<td><?php echo esc_html( $entry['uri'] ); ?></td>
 								<td><?php echo esc_html( isset( $entry['user_agent'] ) ? $entry['user_agent'] : '' ); ?></td>
 								<td><?php echo esc_html( isset( $entry['status'] ) ? $entry['status'] : '' ); ?></td>
-								<td><?php echo esc_html( isset( $entry['cf_status'] ) ? $entry['cf_status'] : '' ); ?></td>
 								<td><?php echo self::format_log_headers( isset( $entry['headers'] ) ? $entry['headers'] : array() ); ?></td>
 								<td><?php echo self::format_missing_indicators( isset( $entry['missing_indicators'] ) ? $entry['missing_indicators'] : array() ); ?></td>
 							</tr>
