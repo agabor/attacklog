@@ -185,7 +185,6 @@ class ALW_Request_Filter {
 			'CF-IPCountry'       => 'HTTP_CF_IPCOUNTRY',
 			'CF-Ray'             => 'HTTP_CF_RAY',
 			'CF-Visitor'         => 'HTTP_CF_VISITOR',
-			'CF-Worker'          => 'HTTP_CF_WORKER',
 			'CF-Device-Type'     => 'HTTP_CF_DEVICE_TYPE',
 			'CDN-Loop'           => 'HTTP_CDN_LOOP',
 			'CF-EW-Via'          => 'HTTP_CF_EW_VIA',
