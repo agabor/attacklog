@@ -163,8 +163,14 @@ class ALW_Request_Filter {
 
 		if ( ! empty( $baseline['headers'] ) && is_array( $baseline['headers'] ) ) {
 			foreach ( $baseline['headers'] as $label => $was_present ) {
-				if ( $was_present && empty( $current['headers'][ $label ] ) ) {
+				$is_present_now = ! empty( $current['headers'][ $label ] );
+
+				if ( $was_present && ! $is_present_now ) {
 					$missing[] = $label . ' header';
+				}
+
+				if ( ! $was_present && $is_present_now ) {
+					$missing[] = 'Unexpected ' . $label . ' header';
 				}
 			}
 		}
@@ -174,10 +180,15 @@ class ALW_Request_Filter {
 
 	public static function get_cloudflare_header_map() {
 		return array(
-			'CF-Connecting-IP' => 'HTTP_CF_CONNECTING_IP',
-			'CF-IPCountry'     => 'HTTP_CF_IPCOUNTRY',
-			'CF-Ray'           => 'HTTP_CF_RAY',
-			'CF-Visitor'       => 'HTTP_CF_VISITOR',
+			'CF-Connecting-IP'   => 'HTTP_CF_CONNECTING_IP',
+			'CF-Connecting-IPv6' => 'HTTP_CF_CONNECTING_IPV6',
+			'CF-IPCountry'       => 'HTTP_CF_IPCOUNTRY',
+			'CF-Ray'             => 'HTTP_CF_RAY',
+			'CF-Visitor'         => 'HTTP_CF_VISITOR',
+			'CF-Worker'          => 'HTTP_CF_WORKER',
+			'CF-Device-Type'     => 'HTTP_CF_DEVICE_TYPE',
+			'CDN-Loop'           => 'HTTP_CDN_LOOP',
+			'CF-EW-Via'          => 'HTTP_CF_EW_VIA',
 		);
 	}
 
@@ -210,9 +221,14 @@ class ALW_Request_Filter {
     public static function get_forbidden_headers() {
 		$header_map = array(
 			'CF-Connecting-IP'    => 'HTTP_CF_CONNECTING_IP',
+			'CF-Connecting-IPv6'  => 'HTTP_CF_CONNECTING_IPV6',
 			'CF-IPCountry'        => 'HTTP_CF_IPCOUNTRY',
 			'CF-Ray'              => 'HTTP_CF_RAY',
 			'CF-Visitor'          => 'HTTP_CF_VISITOR',
+			'CF-Worker'           => 'HTTP_CF_WORKER',
+			'CF-Device-Type'      => 'HTTP_CF_DEVICE_TYPE',
+			'CDN-Loop'            => 'HTTP_CDN_LOOP',
+			'CF-EW-Via'           => 'HTTP_CF_EW_VIA',
 			'True-Client-IP'      => 'HTTP_TRUE_CLIENT_IP',
 			'X-Forwarded-For'     => 'HTTP_X_FORWARDED_FOR',
 			'X-Real-IP'           => 'HTTP_X_REAL_IP',
