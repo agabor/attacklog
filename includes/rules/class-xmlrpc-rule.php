@@ -52,14 +52,7 @@ class Xmlrpc_Rule {
 			return;
 		}
 
-		$input_stream = fopen( 'php://input', 'rb' );
-
-		if ( false === $input_stream ) {
-			return;
-		}
-
-		$body_chunk = fread( $input_stream, 8192 );
-		fclose( $input_stream );
+		$body_chunk = file_get_contents( 'php://input', false, null, 0, 8192 );
 
 		if ( false === $body_chunk || '' === $body_chunk ) {
 			return;

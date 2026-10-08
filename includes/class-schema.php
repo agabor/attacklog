@@ -18,6 +18,10 @@ class Schema {
 
 	const ERROR_TYPE_SUSPICIOUS_UA = 5;
 
+	const ERROR_TYPES_CACHE_KEY = 'error_types';
+
+	const CACHE_GROUP = 'attacklog';
+
 	public static function get_table_name( $suffix ) {
 		global $wpdb;
 
@@ -116,19 +120,24 @@ class Schema {
 	}
 
 	public static function seed_error_types() {
+		foreach ( self::get_error_type_ids() as $name => $id ) {
+			self::store_error_type( $id, $name );
+		}
+
+		wp_cache_delete( self::ERROR_TYPES_CACHE_KEY, self::CACHE_GROUP );
+	}
+
+	private static function store_error_type( $id, $name ) {
 		global $wpdb;
 
-		$table = self::get_table_name( 'error_types' );
-
-		foreach ( self::get_error_type_ids() as $name => $id ) {
-			$wpdb->query(
-				$wpdb->prepare(
-					"INSERT IGNORE INTO {$table} (id, name) VALUES (%d, %s)",
-					$id,
-					$name
-				)
-			);
-		}
+		$wpdb->replace(
+			self::get_table_name( 'error_types' ),
+			array(
+				'id'   => $id,
+				'name' => $name,
+			),
+			array( '%d', '%s' )
+		);
 	}
 
 	public static function get_error_type_ids() {
