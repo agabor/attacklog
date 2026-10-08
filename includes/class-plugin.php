@@ -23,6 +23,8 @@ class Plugin {
 
 	private $logger;
 
+	private $cron;
+
 	private function __construct() {}
 
 	public static function instance() {
@@ -54,6 +56,9 @@ class Plugin {
 
 		$this->repository = new Repository();
 		$this->logger      = new Logger( $classifier, $this->repository );
+
+		$this->cron = new Cron( $this->repository );
+		$this->cron->register_hooks();
 
 		if ( $this->request_context->is_xmlrpc_request() ) {
 			$xmlrpc_rule->register_listeners();

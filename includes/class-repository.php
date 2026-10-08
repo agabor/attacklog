@@ -316,6 +316,58 @@ class Repository {
 		return $total_deleted;
 	}
 
+	public function delete_requests_older_than( int $keep_days ): int {
+		global $wpdb;
+
+		$requests_table = Schema::get_table_name( 'requests' );
+		$errors_table   = Schema::get_table_name( 'request_errors' );
+		$cutoff         = gmdate( 'Y-m-d H:i:s', time() - $keep_days * DAY_IN_SECONDS );
+		$total_requests = 0;
+
+		do {
+			$request_ids = $wpdb->get_col(
+				$wpdb->prepare(
+					"SELECT id FROM {$requests_table} WHERE created_at < %s LIMIT %d",
+					$cutoff,
+					self::BATCH_SIZE
+				)
+			);
+
+			if ( empty( $request_ids ) ) {
+				break;
+			}
+
+			$id_placeholders = implode( ',', array_fill( 0, count( $request_ids ), '%d' ) );
+
+			$wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM {$errors_table} WHERE request_id IN ({$id_placeholders})",
+					$request_ids
+				)
+			);
+
+			$deleted_requests = $wpdb->query(
+				$wpdb->prepare(
+					"DELETE FROM {$requests_table} WHERE id IN ({$id_placeholders})",
+					$request_ids
+				)
+			);
+
+			if ( ! $deleted_requests ) {
+				break;
+			}
+
+			$batch_size      = count( $request_ids );
+			$total_requests += $batch_size;
+		} while ( self::BATCH_SIZE === $batch_size );
+
+		if ( $total_requests > 0 ) {
+			$this->cleanup_orphans();
+		}
+
+		return $total_requests;
+	}
+
 	public function delete_requests_by_ip( string $binary_ip, array $error_type_ids ): int {
 		global $wpdb;
 
