@@ -19,7 +19,7 @@ class Logger {
 			$this->process( $context );
 		} catch ( \Throwable $caught_exception ) {
 			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log( // phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log
+				error_log(
 					sprintf( 'Attack Log: %s', $caught_exception->getMessage() )
 				);
 			}
@@ -44,6 +44,7 @@ class Logger {
 		global $wpdb;
 
 		$ip_resolver = new Ip_Resolver();
+		$created_at  = gmdate( 'Y-m-d H:i:s' );
 
 		$request_type_id = $this->repository->upsert_request_type(
 			$context->get_method(),
@@ -72,11 +73,11 @@ class Logger {
 				'client_ip'       => $client_ip_binary,
 				'remote_addr'     => $remote_addr_binary,
 				'user_agent_id'   => $user_agent_id,
-				'created_at'      => gmdate( 'Y-m-d H:i:s' ),
+				'created_at'      => $created_at,
 			)
 		);
 
-		$this->repository->insert_request_errors( $request_id, $matched_error_types );
+		$this->repository->insert_request_errors( $request_id, $matched_error_types, $created_at );
 
 		$wpdb->query( 'COMMIT' );
 	}

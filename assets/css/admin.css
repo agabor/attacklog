@@ -277,6 +277,24 @@
 	white-space: nowrap;
 }
 
+.attacklog-wrap .attacklog-sort {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--attacklog-space-1);
+	color: inherit;
+	text-decoration: none;
+}
+
+.attacklog-wrap .attacklog-sort:hover,
+.attacklog-wrap .attacklog-sort:focus {
+	color: var(--attacklog-text);
+	text-decoration: none;
+}
+
+.attacklog-wrap .attacklog-sort__indicator {
+	min-width: 1ch;
+}
+
 .attacklog-wrap .attacklog-table td {
 	padding: var(--attacklog-space-3);
 	border-bottom: 1px solid var(--attacklog-border);
@@ -386,6 +404,11 @@
 
 .attacklog-wrap a.attacklog-badge:hover {
 	filter: brightness(0.95);
+}
+
+.attacklog-wrap .attacklog-badge--all {
+	color: var(--attacklog-neutral);
+	background: var(--attacklog-neutral-bg);
 }
 
 .attacklog-wrap .attacklog-badge[class*="cloudflare"],

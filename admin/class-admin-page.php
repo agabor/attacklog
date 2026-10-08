@@ -82,15 +82,19 @@ class Admin_Page {
 			'attacklog-admin',
 			'attacklogAdmin',
 			array(
-				'ajaxUrl'               => admin_url( 'admin-ajax.php' ),
-				'nonce'                 => wp_create_nonce( self::NONCE_ACTION ),
+				'ajaxUrl'                => admin_url( 'admin-ajax.php' ),
+				'nonce'                  => wp_create_nonce( self::NONCE_ACTION ),
 				'requestHasAllCfHeaders' => Cf_Detector::request_has_all_cf_headers() ? '1' : '0',
-				'strings'               => array(
+				'strings'                => array(
+					'confirmEnable'                  => __( 'Turn on Cloudflare bypass detection?', 'attack-log' ),
 					'confirmEnableWithoutCloudflare' => __( 'This request did not come through Cloudflare. If the site is not really behind Cloudflare, every front-end request will be logged as a Cloudflare Bypass. Turn detection on anyway?', 'attack-log' ),
 					'confirmDisable'                 => __( 'Requests that reach your server directly will no longer be logged as Cloudflare Bypass. Turn detection off?', 'attack-log' ),
+					/* translators: 1: error type name, 2: total number of requests, 3: number of requests that stay because they have other types, 4: number of requests that are deleted. */
+					'confirmClearType'               => __( 'Remove %1$s from %2$s requests? %3$s of them also have other types and stay in those tabs; the other %4$s are deleted. This can\'t be undone.', 'attack-log' ),
 					'clearAllPrompt'                 => __( 'This deletes the entire log, including entries in all other tabs. Type CLEAR to confirm.', 'attack-log' ),
-					'clearAllMismatch'               => __( 'The log was not cleared because the confirmation text did not match.', 'attack-log' ),
-					'genericError'                   => __( 'Something went wrong. Please try again.', 'attack-log' ),
+					'errorGeneric'                   => __( 'Something went wrong. Please try again.', 'attack-log' ),
+					'on'                             => __( 'On', 'attack-log' ),
+					'off'                            => __( 'Off', 'attack-log' ),
 				),
 			)
 		);
@@ -101,7 +105,7 @@ class Admin_Page {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'attack-log' ) );
 		}
 
-		$attacklog_view = $this->get_log_view_data();
+		$view_data = $this->get_log_view_data();
 
 		require ATTACKLOG_PLUGIN_DIR . 'admin/views/log.php';
 	}
@@ -463,18 +467,18 @@ class Admin_Page {
 
 	private function get_status_class( $status_code ): string {
 		if ( $status_code >= 200 && $status_code < 300 ) {
-			return 'attacklog-status--success';
+			return 'attacklog-code--2xx';
 		}
 
 		if ( $status_code >= 400 && $status_code < 500 ) {
-			return 'attacklog-status--warning';
+			return 'attacklog-code--4xx';
 		}
 
 		if ( $status_code >= 500 ) {
-			return 'attacklog-status--danger';
+			return 'attacklog-code--5xx';
 		}
 
-		return 'attacklog-status--neutral';
+		return 'attacklog-code--neutral';
 	}
 
 	private function format_ip( $binary_ip ): string {

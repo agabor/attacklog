@@ -2,7 +2,7 @@
 	'use strict';
 
 	const config = window.attacklogAdmin || {};
-	const strings = config.strings || config.i18n || {};
+	const strings = config.strings || {};
 
 	const defaultStrings = {
 		confirmEnable: 'Turn on Cloudflare bypass detection?',
@@ -56,7 +56,7 @@
 	}
 
 	function requestHasCloudflareHeaders() {
-		return Boolean( config.hasCfHeaders || config.requestHasCfHeaders );
+		return '1' === config.requestHasAllCfHeaders;
 	}
 
 	function renderSwitchState( switchButton, enabled ) {
