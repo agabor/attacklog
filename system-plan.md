@@ -389,7 +389,6 @@ Limitation: an attacker who also forges all three CF headers is treated as Cloud
 ### 7.4 Whitelist UI helpers
 
 - "**Add my current IP**" button pre-fills the admin's own address (resolved per 7.3).
-- Whitelisting from the log: the event drawer has **Whitelist IP** / **Whitelist UA** buttons that open the form pre-filled with the request's exact IP or User-Agent and its error types.
 - Whitelist entries are **not retroactive**: existing rows stay; the form offers "Also delete existing matching rows" as an explicit checkbox.
 
 ---
@@ -532,7 +531,6 @@ IP addresses and User-Agents are personal data. Logging them for security is gen
 
 - Adds suggested text to the site's privacy policy via `wp_add_privacy_policy_content()` (what is logged, why, how long).
 - Keeps data only for the auto-clean period (default 30 days).
-- Offers **"Anonymise IPs after N days"** (default off): zeroes the last octet of IPv4 / last 80 bits of IPv6 in `client_ip` and `remote_addr` for older rows, keeping country and patterns useful for trend analysis.
 - Never sends IPs or UAs anywhere off the site.
 
 This is a design note, not legal advice; the site owner should confirm their own obligations.
@@ -558,8 +556,6 @@ For auto-clean and clear by type, in batches of 5,000 (`… LIMIT 5000`, looped)
 5. Recompute `hit_count` of the surviving `request_types` that lost requests (`COUNT(*)` on `requests`), so counts match what is still in the log. `first_seen` / `last_seen` stay as lifetime values.
 6. Invalidate the cached tab counts and stats (60-second transient).
 
-Auto-clean step 7: if enabled, anonymise IPs older than the configured age (8.6).
-
 **Keep last X days:** setting `keep_days`, integer 1–365, default **30**. There is no "keep forever" option; auto-clean always runs. The cron runs daily at a randomised time; changing the setting also runs one clean-up immediately.
 
 Clearing never touches the whitelist, settings or Cloudflare state.
@@ -569,7 +565,7 @@ Clearing never touches the whitelist, settings or Cloudflare state.
 | Option | Content |
 |---|---|
 | `attacklog_cf_status` | Bypass detection switch, state, who/when set it (4.2) |
-| `attacklog_settings` | Keep-days (auto-clean), extra patterns, ignored paths, IP anonymisation |
+| `attacklog_settings` | Keep-days (auto-clean), extra patterns, ignored paths |
 | `attacklog_whitelist` | Whitelist entries (7.1), not autoloaded |
 | `attacklog_db_version` | Schema version |
 
@@ -598,7 +594,7 @@ Top-level menu item **Attack Log** (dashicon `dashicons-shield-alt`), capability
 │  All   │ Cloudflare Bypass │ Probing  Direct PHP  XML-RPC  Suspicious UA       │
 │  998   │       12          │   347        41        602        202            │
 │ ───────┘                   └──────────────────────────────────────────────────  │
-│ 🔍 Search path, IP or user agent…                        Range: All (30 d) ▾   │
+│                                                          Range: All (30 d) ▾   │
 ├────────────────────────────────────────────────────────────────────────────────┤
 │ Time      Method Path               Code IP             Also flagged          │
 │ 06:41:12  GET    /.env               404 185.220.101.4  Probing  Suspicious UA│
@@ -607,7 +603,7 @@ Top-level menu item **Attack Log** (dashicon `dashicons-shield-alt`), capability
 │           curl/8.5.0                                                           │
 │ …                                                                              │
 ├────────────────────────────────────────────────────────────────────────────────┤
-│ ‹ 1 2 3 › · 12 requests            [Export CSV]  [Clear Cloudflare Bypass]     │
+│ ‹ 1 2 3 › · 12 requests                          [Clear Cloudflare Bypass]     │
 │ Auto-clean: entries older than 30 days are removed daily · Change    [Clear all]│
 └────────────────────────────────────────────────────────────────────────────────┘
 ```
@@ -617,7 +613,7 @@ Top-level menu item **Attack Log** (dashicon `dashicons-shield-alt`), capability
 - Tabs in a fixed order: **All**, Cloudflare Bypass, Probing, Direct PHP Access, XML-RPC, Suspicious User Agent. Each tab shows its **name** and **request count**.
   - Type tabs count the requests that have that error type (`request_errors` rows of that type).
   - **All** counts rows in `requests`, so a request flagged as both Probing and Suspicious UA counts once. That's why All can be lower than the sum of the type tabs; a tooltip on the count explains this.
-- The counts follow the active search and date range, so a tab's number always equals the total in its table. With no filter they show everything currently in the log (i.e. within the auto-clean window).
+- The counts follow the active date range, so a tab's number always equals the total in its table. With no filter they show everything currently in the log (i.e. within the auto-clean window).
 - Default tab: **All**; afterwards the last opened tab is remembered per user (user meta).
 - The active tab is part of the URL (`&type=all`, `&type=probing`, …), so links into a tab work and the browser back button behaves.
 - When Cloudflare bypass detection is off, the Cloudflare Bypass tab stays visible (old entries remain readable) but is greyed with a "detection off" label.
@@ -634,7 +630,7 @@ Top-level menu item **Attack Log** (dashicon `dashicons-shield-alt`), capability
 - **Clear {type}** — shown on type tabs; removes that error type from every request (8.7). Confirmation dialog states the numbers: "Remove Probing from 347 requests? 120 of them also have other types and stay in those tabs; the other 227 are deleted. This can't be undone."
 - On the **All** tab only **Clear all** is shown.
 - **Clear all** — deletes the whole log, all types. Confirmation requires typing `CLEAR` (it wipes everything, including entries in other tabs).
-- Both ignore the current search/date filter — they always clear the whole type / whole log, and the dialog says so.
+- Both ignore the current date range — they always clear the whole type / whole log, and the dialog says so.
 - Next to the buttons: "Auto-clean: entries older than {X} days are removed daily", with a link to the setting.
 
 **Cloudflare card:**
@@ -648,14 +644,9 @@ Top-level menu item **Attack Log** (dashicon `dashicons-shield-alt`), capability
 
 When the switch is off, the *Cloudflare Bypass* row in the 24h panel and its tab are greyed out with "detection off".
 
-**Table features:** server-side pagination (50 rows per page), sort by time / code, date range (default: whole log), search across path, IP (exact or CIDR) and User-Agent (`LIKE`). Search and date range stay set when switching tabs.
+**Table features:** server-side pagination (50 rows per page), sort by time / code, date range (default: whole log). The date range stays set when switching tabs. There is no search.
 
-**Event drawer** (click a row): full path, method, status code, all badges, client IP and remote address (highlighted if they differ), country, full User-Agent, CF-Ray and CF-Visitor, XML-RPC details, request type's first/last seen and hit count, plus:
-
-- "All requests from this IP" / "All requests with this User-Agent" links (apply as search within the current tab)
-- **Whitelist IP** / **Whitelist UA** buttons (pre-filled form, 7.4)
-
-**Insights panel** (below the table, three small tabs): **Top paths**, **Top IPs**, **Top User-Agents** — top 10 in the selected range, each with event count and a quick-filter link.
+**IP column:** shows `client_ip`. When `remote_addr` differs (5.1), it is shown in smaller text below, so a forged or proxied `CF-Connecting-IP` is visible at a glance. Long paths and User-Agents are truncated with the full value in a `title` tooltip; rows are not clickable.
 
 ### 9.3 Whitelist tab
 
@@ -676,7 +667,6 @@ The add/edit form: type (IP / User-Agent), value (exact), category checkboxes (*
 ### 9.4 Settings tab
 
 - Auto-clean: keep last X days (number, 1–365, default 30; required, no "keep forever")
-- Anonymise IPs after N days (number, 0 = off)
 - Extra probing patterns (textarea, one regex per line, validated on save)
 - Extra suspicious User-Agent patterns (textarea, one regex per line, validated on save)
 - Ignored paths (textarea)
@@ -692,8 +682,8 @@ The add/edit form: type (IP / User-Agent), value (exact), category checkboxes (*
 - Badges: pill-shaped, colour-coded — Cloudflare Bypass = red/rose, Probing = amber, Direct PHP = violet, XML-RPC = blue, Suspicious UA = slate; status codes 2xx green, 4xx amber, 5xx red.
 - Monospace for paths, IPs, User-Agents and Ray IDs; long values truncated with ellipsis + full value in `title`.
 - Respects WP admin colour scheme for primary buttons; dark-mode friendly via `prefers-color-scheme`.
-- Responsive: status and 24h cards stack on narrow screens; table scrolls horizontally; the drawer becomes a full-screen sheet on mobile.
-- Vanilla JS only (filters, drawer, whitelist form, Cloudflare switch); data via admin-ajax / REST endpoint.
+- Responsive: status and 24h cards stack on narrow screens; table scrolls horizontally.
+- Vanilla JS only (tabs, date range, whitelist form, clear dialogs, Cloudflare switch); data via admin-ajax / REST endpoint.
 
 ---
 
@@ -721,13 +711,13 @@ attack-log/
 │   │   ├── class-xmlrpc-rule.php          Detection + xmlrpc_call / login listeners
 │   │   └── class-suspicious-ua-rule.php   UA rule sets and labels
 │   ├── class-whitelist.php        Entry storage, validation, exact IP and UA matching
-│   ├── class-privacy.php          Privacy policy text, IP anonymisation
+│   ├── class-privacy.php          Privacy policy text
 │   ├── class-repository.php       All SQL (upserts, queries, purge, stats)
 │   ├── class-logger.php           shutdown handler: classify → repository
 │   └── class-cron.php             Daily auto-clean
 ├── admin/
 │   ├── class-admin-page.php       Menu, tabs, rendering
-│   ├── class-log-controller.php   AJAX/REST: list per type, tab counts, stats, detail, export, clear by type / all, CF switch
+│   ├── class-log-controller.php   AJAX/REST: list per type, tab counts, stats, clear by type / all, CF switch
 │   ├── class-whitelist-controller.php  AJAX/REST: list, add, edit, delete
 │   ├── class-settings.php         Settings API registration + sanitisation
 │   └── views/
@@ -760,7 +750,7 @@ Namespace: `AttackLog\`. PSR-4-style autoloader without Composer (keeps the plug
 | `admin_enqueue_scripts` | Load CSS/JS only on plugin page |
 | `admin_init` | `wp_add_privacy_policy_content()` |
 | `load-{attack_log_page_hook}` | One-time CF auto-set if state is `unknown`; build the live note |
-| `wp_ajax_attacklog_*` | Log listing, stats, detail, export, clear by type / all, CF switch, whitelist CRUD |
+| `wp_ajax_attacklog_*` | Log listing, stats, clear by type / all, CF switch, whitelist CRUD |
 | `attacklog_purge` | Daily auto-clean cron event |
 
 ---
@@ -774,7 +764,6 @@ Namespace: `AttackLog\`. PSR-4-style autoloader without Composer (keeps the plug
 - `CF-Visitor` stored as raw string, never `json_decode`-and-trusted for logic.
 - XML-RPC body inspection reads at most 8 KB and only extracts `<methodName>` with a simple regex — no XML parser (avoids XXE and billion-laughs issues).
 - Paths stored as received (normalised) and only ever rendered escaped; never turned into links to the live site.
-- CSV export: prefix cells beginning with `=`, `+`, `-`, `@`, tab or CR with `'` to prevent formula injection (UAs are a known vector for this).
 - User-supplied regex patterns validated on save; invalid ones rejected with a notice. Whitelist entries validated (IP via `inet_pton`, UA sanitised as in 5.2).
 - Logging must never fatally error the site: the shutdown handler is wrapped in `try/catch (\Throwable)` and fails silently (with `error_log` when `WP_DEBUG`).
 
@@ -809,7 +798,7 @@ The plugin must **strictly** meet the WordPress.org coding standards. A build th
 |---|---|---|
 | M1 | Core | Schema, activator, CF detection, IP/UA capture, classifier (all five types), logger, default patterns |
 | M2 | Admin MVP | Cloudflare card, All + error-type tabs with counts, per-type table with "also flagged" badges (pivot queries), pagination, clear by type / clear all |
-| M3 | Whitelist | Whitelist storage and matching, Whitelist tab, drawer quick-add |
-| M4 | Polish | 24h stats, insights panel, search across path/IP/UA, date range, CSV export, design pass |
-| M5 | Hardening | Settings tab, auto-clean and anonymisation cron, privacy text, uninstall |
+| M3 | Whitelist | Whitelist storage and matching, Whitelist tab |
+| M4 | Polish | 24h stats, date range, design pass |
+| M5 | Hardening | Settings tab, auto-clean cron, privacy text, uninstall |
 | M6 | Release | WPCS run: zero errors, remaining warnings only the unavoidable ones (13); i18n `.pot`, readme |

@@ -1,10 +1,13 @@
 <?php
 /**
  * Plugin Name: Attack Log
+ * Plugin URI: https://webshop.tech/attack-log
  * Description: Logs suspicious requests: Cloudflare bypasses, probing for secret files, direct PHP access, XML-RPC calls and scanner user agents.
  * Version: 1.0.0
  * Requires at least: 6.0
  * Requires PHP: 7.4
+ * Author: Gabor Angyal
+ * Author URI: https://webshop.tech
  * License: GPLv2 or later
  * License URI: https://www.gnu.org/licenses/gpl-2.0.html
  * Text Domain: attack-log

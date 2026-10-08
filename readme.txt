@@ -31,7 +31,7 @@ For each logged request Attack Log stores the time, method, path, status code, c
 = Features =
 
 * Tabs for All and each error type, with request counts.
-* Search by path, IP address or User-Agent; filter by date.
+* Filter by date range.
 * Cloudflare card: shows whether your current request came through Cloudflare, and a switch to turn bypass detection on or off.
 * Whitelist by exact IP address or exact User-Agent, for all types or selected ones — for example your uptime monitor or office IP.
 * Clear one type, or clear the whole log.
@@ -54,7 +54,6 @@ Attack Log stores IP addresses and User-Agents of the requests it logs. These ar
 
 * Everything stays in your own WordPress database. The plugin sends nothing to any external service.
 * Entries are deleted automatically after the configured period (default 30 days).
-* You can optionally anonymise IP addresses after a set number of days.
 * Attack Log adds suggested text to your privacy policy page (Settings → Privacy) describing what it logs and why.
 
 You are responsible for mentioning the logging in your privacy policy. This is not legal advice.
@@ -88,7 +87,7 @@ Most likely bypass detection is on but your site is not (or no longer) proxied t
 
 = Why is my uptime monitor in the log? =
 
-Many monitors and tools use HTTP library User-Agents such as `curl` or `python-requests`. Click the request, then **Whitelist IP** or **Whitelist UA**, and choose which types the entry applies to. Whitelist entries match exactly.
+Many monitors and tools use HTTP library User-Agents such as `curl` or `python-requests`. Copy its exact IP address or User-Agent from the log, add it on the **Whitelist** tab, and choose which types the entry applies to. Whitelist entries match exactly.
 
 = Does it slow down my site? =
 
