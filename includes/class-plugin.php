@@ -2,6 +2,8 @@
 
 namespace AttackLog;
 
+use AttackLog\Admin\Admin_Page;
+use AttackLog\Admin\Log_Controller;
 use AttackLog\Rules\Cf_Bypass_Rule;
 use AttackLog\Rules\Probe_Rule;
 use AttackLog\Rules\Direct_Php_Rule;
@@ -62,6 +64,18 @@ class Plugin {
 		}
 
 		$this->register_runtime_hooks();
+
+		if ( is_admin() ) {
+			$this->boot_admin();
+		}
+	}
+
+	private function boot_admin(): void {
+		$admin_page     = new Admin_Page( $this->repository );
+		$log_controller = new Log_Controller( $this->repository );
+
+		$admin_page->register_hooks();
+		$log_controller->register_hooks();
 	}
 
 	public function register_runtime_hooks() {
