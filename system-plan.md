@@ -389,6 +389,10 @@ Limitation: an attacker who also forges all three CF headers is treated as Cloud
 ### 7.4 Whitelist UI helpers
 
 - "**Add my current IP**" button pre-fills the admin's own address (resolved per 7.3).
+- **Whitelist buttons on every log row** (9.2): **+ IP** and **+ UA** open the add form in a modal on the Log tab, pre-filled with the row's exact value, and with that row's error types ticked. The admin can change the types or the note before saving.
+  - **+ IP** pre-fills the address the whitelist would actually compare for that request (7.3): `client_ip` if the row has all three CF headers, otherwise `remote_addr`. This prevents whitelisting a forged `CF-Connecting-IP`.
+  - **+ UA** is disabled when the User-Agent is missing (it can't be whitelisted, 7.2).
+  - If an identical entry already exists, the button shows a check mark instead and opens that entry for editing.
 - Whitelist entries are **not retroactive**: existing rows stay; the form offers "Also delete existing matching rows" as an explicit checkbox.
 
 ---
@@ -596,10 +600,10 @@ Top-level menu item **Attack Log** (dashicon `dashicons-shield-alt`), capability
 │ ───────┘                   └──────────────────────────────────────────────────  │
 │                                                          Range: All (30 d) ▾   │
 ├────────────────────────────────────────────────────────────────────────────────┤
-│ Time      Method Path               Code IP             Also flagged          │
-│ 06:41:12  GET    /.env               404 185.220.101.4  Probing  Suspicious UA│
+│ Time      Method Path            Code IP             Also flagged     Whitelist │
+│ 06:41:12  GET    /.env            404 185.220.101.4  Probing, Sus. UA [+IP][+UA]│
 │           python-requests/2.32.3                                               │
-│ 06:40:55  POST   /xmlrpc.php         200 203.0.113.9    XML-RPC  Suspicious UA│
+│ 06:40:55  POST   /xmlrpc.php      200 203.0.113.9    XML-RPC, Sus. UA [+IP][+UA]│
 │           curl/8.5.0                                                           │
 │ …                                                                              │
 ├────────────────────────────────────────────────────────────────────────────────┤
@@ -646,7 +650,9 @@ When the switch is off, the *Cloudflare Bypass* row in the 24h panel and its tab
 
 **Table features:** server-side pagination (50 rows per page), sort by time / code, date range (default: whole log). The date range stays set when switching tabs. There is no search.
 
-**IP column:** shows `client_ip`. When `remote_addr` differs (5.1), it is shown in smaller text below, so a forged or proxied `CF-Connecting-IP` is visible at a glance. Long paths and User-Agents are truncated with the full value in a `title` tooltip; rows are not clickable.
+**IP column:** shows `client_ip`. When `remote_addr` differs (5.1), it is shown in smaller text below, so a forged or proxied `CF-Connecting-IP` is visible at a glance. Long paths and User-Agents are truncated with the full value in a `title` tooltip.
+
+**Whitelist column:** **+ IP** and **+ UA** buttons on every row, in every tab (7.4). After saving, existing rows stay (whitelisting isn't retroactive) unless "Also delete existing matching rows" was ticked, in which case the table reloads.
 
 ### 9.3 Whitelist tab
 
@@ -683,7 +689,7 @@ The add/edit form: type (IP / User-Agent), value (exact), category checkboxes (*
 - Monospace for paths, IPs, User-Agents and Ray IDs; long values truncated with ellipsis + full value in `title`.
 - Respects WP admin colour scheme for primary buttons; dark-mode friendly via `prefers-color-scheme`.
 - Responsive: status and 24h cards stack on narrow screens; table scrolls horizontally.
-- Vanilla JS only (tabs, date range, whitelist form, clear dialogs, Cloudflare switch); data via admin-ajax / REST endpoint.
+- Vanilla JS only (tabs, date range, whitelist form and row buttons, clear dialogs, Cloudflare switch); data via admin-ajax / REST endpoint.
 
 ---
 
@@ -798,7 +804,7 @@ The plugin must **strictly** meet the WordPress.org coding standards. A build th
 |---|---|---|
 | M1 | Core | Schema, activator, CF detection, IP/UA capture, classifier (all five types), logger, default patterns |
 | M2 | Admin MVP | Cloudflare card, All + error-type tabs with counts, per-type table with "also flagged" badges (pivot queries), pagination, clear by type / clear all |
-| M3 | Whitelist | Whitelist storage and matching, Whitelist tab |
+| M3 | Whitelist | Whitelist storage and matching, Whitelist tab, row whitelist buttons |
 | M4 | Polish | 24h stats, date range, design pass |
 | M5 | Hardening | Settings tab, auto-clean cron, privacy text, uninstall |
 | M6 | Release | WPCS run: zero errors, remaining warnings only the unavoidable ones (13); i18n `.pot`, readme |

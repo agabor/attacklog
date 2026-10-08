@@ -33,7 +33,7 @@ For each logged request Attack Log stores the time, method, path, status code, c
 * Tabs for All and each error type, with request counts.
 * Filter by date range.
 * Cloudflare card: shows whether your current request came through Cloudflare, and a switch to turn bypass detection on or off.
-* Whitelist by exact IP address or exact User-Agent, for all types or selected ones — for example your uptime monitor or office IP.
+* Whitelist by exact IP address or exact User-Agent, for all types or selected ones — for example your uptime monitor or office IP. Each log row has buttons to whitelist its IP or User-Agent in one click.
 * Clear one type, or clear the whole log.
 * Automatic clean-up: keeps the last 30 days by default (configurable, 1–365 days).
 * Requests from logged-in users are never logged.
@@ -87,7 +87,7 @@ Most likely bypass detection is on but your site is not (or no longer) proxied t
 
 = Why is my uptime monitor in the log? =
 
-Many monitors and tools use HTTP library User-Agents such as `curl` or `python-requests`. Copy its exact IP address or User-Agent from the log, add it on the **Whitelist** tab, and choose which types the entry applies to. Whitelist entries match exactly.
+Many monitors and tools use HTTP library User-Agents such as `curl` or `python-requests`. Click **+ IP** or **+ UA** on its row in the log, choose which types the entry applies to, and save. Whitelist entries match exactly.
 
 = Does it slow down my site? =
 
