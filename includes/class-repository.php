@@ -90,30 +90,20 @@ class Repository {
 			return;
 		}
 
-		$table              = Schema::get_table_name( 'request_errors' );
-		$value_placeholders = array();
-		$query_arguments    = array();
+		$table = Schema::get_table_name( 'request_errors' );
 
 		foreach ( $error_type_ids_with_details as $error_type_id => $detail ) {
-			$query_arguments[] = (int) $request_id;
-			$query_arguments[] = (int) $error_type_id;
-
-			if ( null === $detail ) {
-				$value_placeholders[] = '(%d, %d, NULL, %s)';
-			} else {
-				$value_placeholders[] = '(%d, %d, %s, %s)';
-				$query_arguments[]    = $detail;
-			}
-
-			$query_arguments[] = $created_at;
+			$wpdb->insert(
+				$table,
+				array(
+					'request_id'    => (int) $request_id,
+					'error_type_id' => (int) $error_type_id,
+					'detail'        => $detail,
+					'created_at'    => $created_at,
+				),
+				array( '%d', '%d', '%s', '%s' )
+			);
 		}
-
-		$wpdb->query(
-			$wpdb->prepare(
-				"INSERT INTO {$table} (request_id, error_type_id, detail, created_at) VALUES " . implode( ', ', $value_placeholders ),
-				$query_arguments
-			)
-		);
 
 		$this->invalidate_cache();
 	}
@@ -156,8 +146,6 @@ class Repository {
 	}
 
 	public function get_requests( $error_type_id, $orderby, $order, $page, $per_page ): array {
-		global $wpdb;
-
 		$error_type_id   = null === $error_type_id ? null : (int) $error_type_id;
 		$order_direction = 'ASC' === strtoupper( (string) $order ) ? 'ASC' : 'DESC';
 		$page_number     = max( 1, (int) $page );
@@ -173,8 +161,11 @@ class Repository {
 			return $cached_value;
 		}
 
-		$query = $this->build_requests_query( $error_type_id, $orderby, $order_direction, $page_size, $offset );
-		$rows  = $wpdb->get_results( $query );
+		if ( null === $error_type_id ) {
+			$rows = $this->query_all_requests( $orderby, $order_direction, $page_size, $offset );
+		} else {
+			$rows = $this->query_requests_by_error_type( $error_type_id, $orderby, $order_direction, $page_size, $offset );
+		}
 
 		if ( ! is_array( $rows ) ) {
 			return array();
@@ -185,34 +176,50 @@ class Repository {
 		return $rows;
 	}
 
-	private function build_requests_query( $error_type_id, $orderby, $order_direction, $page_size, $offset ) {
-		global $wpdb;
+	private function get_request_columns_sql(): string {
+		return 'r.id, r.return_code, r.cf_ray, r.cf_ipcountry, r.cf_visitor, r.client_ip, r.remote_addr, r.created_at, t.http_method, t.request_path, ua.user_agent';
+	}
 
-		$requests_table      = Schema::get_table_name( 'requests' );
+	private function get_request_joins_sql(): string {
 		$request_types_table = Schema::get_table_name( 'request_types' );
 		$user_agents_table   = Schema::get_table_name( 'user_agents' );
-		$errors_table        = Schema::get_table_name( 'request_errors' );
 
-		$selected_columns = 'r.id, r.return_code, r.cf_ray, r.cf_ipcountry, r.cf_visitor, r.client_ip, r.remote_addr, r.created_at, t.http_method, t.request_path, ua.user_agent';
-		$shared_joins     = "INNER JOIN {$request_types_table} t ON t.id = r.request_type_id LEFT JOIN {$user_agents_table} ua ON ua.id = r.user_agent_id";
+		return "INNER JOIN {$request_types_table} t ON t.id = r.request_type_id LEFT JOIN {$user_agents_table} ua ON ua.id = r.user_agent_id";
+	}
 
-		if ( null === $error_type_id ) {
-			$order_column = 'return_code' === $orderby ? 'r.return_code' : 'r.created_at';
+	private function query_all_requests( $orderby, $order_direction, $page_size, $offset ) {
+		global $wpdb;
 
-			return $wpdb->prepare(
+		$requests_table   = Schema::get_table_name( 'requests' );
+		$selected_columns = $this->get_request_columns_sql();
+		$shared_joins     = $this->get_request_joins_sql();
+		$order_column     = 'return_code' === $orderby ? 'r.return_code' : 'r.created_at';
+
+		return $wpdb->get_results(
+			$wpdb->prepare(
 				"SELECT {$selected_columns}, NULL AS detail FROM {$requests_table} r {$shared_joins} ORDER BY {$order_column} {$order_direction}, r.id {$order_direction} LIMIT %d OFFSET %d",
 				$page_size,
 				$offset
-			);
-		}
+			)
+		);
+	}
 
-		$order_column = 'return_code' === $orderby ? 'r.return_code' : 'e.created_at';
+	private function query_requests_by_error_type( $error_type_id, $orderby, $order_direction, $page_size, $offset ) {
+		global $wpdb;
 
-		return $wpdb->prepare(
-			"SELECT {$selected_columns}, e.detail AS detail FROM {$errors_table} e INNER JOIN {$requests_table} r ON r.id = e.request_id {$shared_joins} WHERE e.error_type_id = %d ORDER BY {$order_column} {$order_direction}, r.id {$order_direction} LIMIT %d OFFSET %d",
-			$error_type_id,
-			$page_size,
-			$offset
+		$requests_table   = Schema::get_table_name( 'requests' );
+		$errors_table     = Schema::get_table_name( 'request_errors' );
+		$selected_columns = $this->get_request_columns_sql();
+		$shared_joins     = $this->get_request_joins_sql();
+		$order_column     = 'return_code' === $orderby ? 'r.return_code' : 'e.created_at';
+
+		return $wpdb->get_results(
+			$wpdb->prepare(
+				"SELECT {$selected_columns}, e.detail AS detail FROM {$errors_table} e INNER JOIN {$requests_table} r ON r.id = e.request_id {$shared_joins} WHERE e.error_type_id = %d ORDER BY {$order_column} {$order_direction}, r.id {$order_direction} LIMIT %d OFFSET %d",
+				$error_type_id,
+				$page_size,
+				$offset
+			)
 		);
 	}
 
