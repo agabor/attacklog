@@ -1,25 +1,11 @@
 <?php
-/**
- * Plugin activation handler.
- *
- * @package AttackLog
- */
 
 namespace AttackLog;
 
 defined( 'ABSPATH' ) || exit;
 
-/**
- * Runs the one-time setup tasks required when the plugin is activated.
- */
 class Activator {
 
-	/**
-	 * Creates the database schema, sets the initial Cloudflare state and
-	 * schedules the daily auto-clean cron event.
-	 *
-	 * @return void
-	 */
 	public static function activate() {
 		Schema::create_or_upgrade();
 

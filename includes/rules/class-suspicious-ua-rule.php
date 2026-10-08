@@ -1,9 +1,4 @@
 <?php
-/**
- * Suspicious User Agent classification rule.
- *
- * @package AttackLog
- */
 
 namespace AttackLog\Rules;
 
@@ -11,24 +6,10 @@ use AttackLog\Request_Context;
 
 defined( 'ABSPATH' ) || exit;
 
-/**
- * Matches requests whose User-Agent is missing, malformed, or belongs
- * to an HTTP library, a known scanner, or an outdated browser.
- */
 class Suspicious_Ua_Rule {
 
-	/**
-	 * Placeholder User-Agent values treated as malformed.
-	 *
-	 * @var array
-	 */
 	private static $placeholder_values = array( '-', 'null', 'undefined', 'test' );
 
-	/**
-	 * Returns the suspicious User-Agent pattern groups, keyed by label.
-	 *
-	 * @return array
-	 */
 	public function get_pattern_groups() {
 		$default_groups = array(
 			'http-library' => array(
@@ -93,32 +74,13 @@ class Suspicious_Ua_Rule {
 			}
 		}
 
-		/**
-		 * Filters the suspicious User-Agent pattern groups.
-		 *
-		 * @param array $default_groups Pattern groups keyed by label.
-		 */
 		return apply_filters( 'attacklog_suspicious_ua_patterns', $default_groups );
 	}
 
-	/**
-	 * Checks whether the given request matches the Suspicious User Agent rule.
-	 *
-	 * @param Request_Context $context Request context to evaluate.
-	 *
-	 * @return bool
-	 */
 	public function matches( Request_Context $context ) {
 		return null !== $this->get_matched_label_and_token( $context );
 	}
 
-	/**
-	 * Finds the first suspicious User-Agent rule that matches the request.
-	 *
-	 * @param Request_Context $context Request context to evaluate.
-	 *
-	 * @return array|null Two-element array of [ label, token ], or null when no rule matches.
-	 */
 	public function get_matched_label_and_token( Request_Context $context ) {
 		$user_agent = $context->get_user_agent();
 
@@ -141,13 +103,6 @@ class Suspicious_Ua_Rule {
 		return null;
 	}
 
-	/**
-	 * Checks whether a User-Agent string looks malformed.
-	 *
-	 * @param string $user_agent Sanitized User-Agent string.
-	 *
-	 * @return bool
-	 */
 	private function is_malformed( $user_agent ) {
 		if ( strlen( $user_agent ) < 10 ) {
 			return true;
@@ -168,14 +123,6 @@ class Suspicious_Ua_Rule {
 		return false;
 	}
 
-	/**
-	 * Returns the detail text for a matching request: the matched label
-	 * and, when available, the token that matched.
-	 *
-	 * @param Request_Context $context Request context that matched.
-	 *
-	 * @return string|null
-	 */
 	public function get_detail( Request_Context $context ) {
 		$matched_rule = $this->get_matched_label_and_token( $context );
 

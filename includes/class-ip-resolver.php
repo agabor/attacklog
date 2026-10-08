@@ -1,9 +1,4 @@
 <?php
-/**
- * Client IP resolution and conversion helpers.
- *
- * @package AttackLog
- */
 
 namespace AttackLog;
 

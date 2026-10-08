@@ -169,4 +169,92 @@ class Cf_Detector {
 
 		update_option( self::OPTION_NAME, $new_status );
 	}
+
+	/**
+	 * Computes, from the current request's headers only, a live note
+	 * describing whether this request appears to have come through
+	 * Cloudflare. Never stored and never affects the switch.
+	 *
+	 * @return array {
+	 *     @type string      $status          'full', 'partial' or 'none'.
+	 *     @type string      $message         Human-readable note.
+	 *     @type string|null $ray_id          CF-Ray header value, if present.
+	 *     @type string|null $country         CF-IPCountry header value, if present.
+	 *     @type array       $missing_headers Labels of the headers that are missing.
+	 * }
+	 */
+	public static function get_live_note() {
+		$present_header_count = self::count_present_cf_headers();
+		$missing_headers      = array();
+
+		if ( empty( $_SERVER['HTTP_CF_RAY'] ) ) {
+			$missing_headers[] = 'CF-Ray';
+		}
+
+		if ( empty( $_SERVER['HTTP_CF_IPCOUNTRY'] ) ) {
+			$missing_headers[] = 'CF-IPCountry';
+		}
+
+		if ( empty( $_SERVER['HTTP_CF_VISITOR'] ) ) {
+			$missing_headers[] = 'CF-Visitor';
+		}
+
+		$ray_id = ! empty( $_SERVER['HTTP_CF_RAY'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_RAY'] ) )
+			: null;
+
+		$country = ! empty( $_SERVER['HTTP_CF_IPCOUNTRY'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['HTTP_CF_IPCOUNTRY'] ) )
+			: null;
+
+		if ( 3 === $present_header_count ) {
+			$status  = 'full';
+			$message = sprintf(
+				/* translators: 1: Cloudflare Ray ID, 2: two-letter country code. */
+				__( 'This request came through Cloudflare (Ray %1$s, %2$s)', 'attack-log' ),
+				$ray_id,
+				$country
+			);
+		} elseif ( $present_header_count > 0 ) {
+			$status  = 'partial';
+			$message = sprintf(
+				/* translators: %s: comma-separated list of missing header names. */
+				__( 'This request has only some Cloudflare headers (missing: %s)', 'attack-log' ),
+				implode( ', ', $missing_headers )
+			);
+		} else {
+			$status  = 'none';
+			$message = __( 'This request did not come through Cloudflare', 'attack-log' );
+		}
+
+		return array(
+			'status'          => $status,
+			'message'         => $message,
+			'ray_id'          => $ray_id,
+			'country'         => $country,
+			'missing_headers' => $missing_headers,
+		);
+	}
+
+	/**
+	 * Returns a hint when the stored switch and the current request
+	 * disagree, or null when they agree.
+	 *
+	 * @return string|null
+	 */
+	public static function get_switch_hint() {
+		$bypass_detection_enabled = self::is_bypass_detection_enabled();
+		$request_has_all_headers  = self::request_has_all_cf_headers();
+		$present_header_count     = self::count_present_cf_headers();
+
+		if ( $bypass_detection_enabled && 0 === $present_header_count ) {
+			return __( "You reached the site without Cloudflare. That's expected if you use a VPN, a hosts-file entry or a staging domain. Otherwise Cloudflare proxying (orange cloud) may be switched off — and every visitor would be logged as a bypass.", 'attack-log' );
+		}
+
+		if ( ! $bypass_detection_enabled && $request_has_all_headers ) {
+			return __( 'This site seems to be behind Cloudflare. Turn on bypass detection?', 'attack-log' );
+		}
+
+		return null;
+	}
 }

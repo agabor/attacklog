@@ -1,29 +1,11 @@
 <?php
-/**
- * Database access layer for Attack Log data.
- *
- * @package AttackLog
- */
 
 namespace AttackLog;
 
 defined( 'ABSPATH' ) || exit;
 
-/**
- * Provides all SQL operations used to write and read logged requests,
- * their deduplicated request types and user agents, and their error
- * type associations.
- */
 class Repository {
 
-	/**
-	 * Upserts a (method, path) pair into the request_types table.
-	 *
-	 * @param string $http_method   HTTP method of the request.
-	 * @param string $request_path  Normalized request path.
-	 *
-	 * @return int Request type ID.
-	 */
 	public function upsert_request_type( $http_method, $request_path ) {
 		global $wpdb;
 
@@ -46,13 +28,6 @@ class Repository {
 		return (int) $wpdb->insert_id;
 	}
 
-	/**
-	 * Upserts a User-Agent string into the user_agents table.
-	 *
-	 * @param string|null $user_agent Sanitized User-Agent string, or null when missing.
-	 *
-	 * @return int|null User agent ID, or null when $user_agent is null.
-	 */
 	public function upsert_user_agent( $user_agent ) {
 		global $wpdb;
 
@@ -78,26 +53,12 @@ class Repository {
 		return (int) $wpdb->insert_id;
 	}
 
-	/**
-	 * Looks up an error type ID by name, using a cached map of all
-	 * error types to avoid repeated queries.
-	 *
-	 * @param string $error_type_name Error type name, e.g. 'Probing'.
-	 *
-	 * @return int|null Error type ID, or null when the name is unknown.
-	 */
 	public function get_error_type_id( $error_type_name ) {
 		$error_type_map = $this->get_error_type_map();
 
 		return isset( $error_type_map[ $error_type_name ] ) ? $error_type_map[ $error_type_name ] : null;
 	}
 
-	/**
-	 * Returns the cached name => id map of all error types, querying and
-	 * caching it on first use.
-	 *
-	 * @return array
-	 */
 	private function get_error_type_map() {
 		global $wpdb;
 
@@ -121,25 +82,6 @@ class Repository {
 		return $error_type_map;
 	}
 
-	/**
-	 * Inserts a single logged request.
-	 *
-	 * @param array $request_data {
-	 *     Request data to store.
-	 *
-	 *     @type int         $request_type_id Request type ID.
-	 *     @type int         $return_code     Final HTTP status code.
-	 *     @type string|null $cf_ray          CF-Ray header value.
-	 *     @type string|null $cf_ipcountry    CF-IPCountry header value.
-	 *     @type string|null $cf_visitor      CF-Visitor header value.
-	 *     @type string|null $client_ip       Binary client IP.
-	 *     @type string|null $remote_addr     Binary remote address.
-	 *     @type int|null    $user_agent_id   User agent ID.
-	 *     @type string      $created_at      UTC datetime.
-	 * }
-	 *
-	 * @return int Inserted request ID.
-	 */
 	public function insert_request( array $request_data ) {
 		global $wpdb;
 
@@ -164,14 +106,6 @@ class Repository {
 		return (int) $wpdb->insert_id;
 	}
 
-	/**
-	 * Inserts the matched error type rows for a logged request.
-	 *
-	 * @param int   $request_id                  Request ID the error types belong to.
-	 * @param array $error_type_ids_with_details  Map of error_type_id => detail (string or null).
-	 *
-	 * @return void
-	 */
 	public function insert_request_errors( $request_id, array $error_type_ids_with_details ) {
 		global $wpdb;
 

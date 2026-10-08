@@ -43,13 +43,6 @@ define( 'ATTACKLOG_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
  */
 define( 'ATTACKLOG_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
-/**
- * Autoloads Attack Log classes from the AttackLog namespace.
- *
- * @param string $class_name Fully qualified class name.
- *
- * @return void
- */
 function attacklog_autoload( $class_name ) {
 	$namespace_prefix = 'AttackLog\\';
 
@@ -64,6 +57,8 @@ function attacklog_autoload( $class_name ) {
 
 	if ( ! empty( $path_parts ) && 'Rules' === $path_parts[0] ) {
 		$target_directory = ATTACKLOG_PLUGIN_DIR . 'includes/rules/';
+	} elseif ( ! empty( $path_parts ) && 'Admin' === $path_parts[0] ) {
+		$target_directory = ATTACKLOG_PLUGIN_DIR . 'admin/';
 	} else {
 		$target_directory = ATTACKLOG_PLUGIN_DIR . 'includes/';
 	}

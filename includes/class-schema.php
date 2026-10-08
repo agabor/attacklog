@@ -1,80 +1,29 @@
 <?php
-/**
- * Database schema management.
- *
- * @package AttackLog
- */
 
 namespace AttackLog;
 
 defined( 'ABSPATH' ) || exit;
 
-/**
- * Creates and upgrades the Attack Log database tables.
- */
 class Schema {
 
-	/**
-	 * Current schema version.
-	 *
-	 * @var string
-	 */
 	const DB_VERSION = '1.0.0';
 
-	/**
-	 * Error type ID: Cloudflare Bypass.
-	 *
-	 * @var int
-	 */
 	const ERROR_TYPE_CF_BYPASS = 1;
 
-	/**
-	 * Error type ID: Probing.
-	 *
-	 * @var int
-	 */
 	const ERROR_TYPE_PROBING = 2;
 
-	/**
-	 * Error type ID: Direct PHP Access.
-	 *
-	 * @var int
-	 */
 	const ERROR_TYPE_DIRECT_PHP = 3;
 
-	/**
-	 * Error type ID: XML-RPC.
-	 *
-	 * @var int
-	 */
 	const ERROR_TYPE_XMLRPC = 4;
 
-	/**
-	 * Error type ID: Suspicious User Agent.
-	 *
-	 * @var int
-	 */
 	const ERROR_TYPE_SUSPICIOUS_UA = 5;
 
-	/**
-	 * Returns the full, prefixed table name for a given table suffix.
-	 *
-	 * @param string $suffix Table suffix, e.g. 'requests'.
-	 *
-	 * @return string
-	 */
 	public static function get_table_name( $suffix ) {
 		global $wpdb;
 
 		return $wpdb->prefix . 'attacklog_' . $suffix;
 	}
 
-	/**
-	 * Creates the database tables if missing, or upgrades them if the
-	 * stored schema version differs from the current one.
-	 *
-	 * @return void
-	 */
 	public static function create_or_upgrade() {
 		$installed_version = get_option( 'attacklog_db_version', '' );
 
@@ -93,12 +42,6 @@ class Schema {
 		update_option( 'attacklog_db_version', self::DB_VERSION );
 	}
 
-	/**
-	 * Builds the dbDelta-formatted CREATE TABLE statements for every
-	 * Attack Log table.
-	 *
-	 * @return array
-	 */
 	public static function get_schema_sql() {
 		global $wpdb;
 
@@ -172,11 +115,6 @@ class Schema {
 		return $statements;
 	}
 
-	/**
-	 * Inserts the fixed error type rows if they do not already exist.
-	 *
-	 * @return void
-	 */
 	public static function seed_error_types() {
 		global $wpdb;
 
@@ -193,11 +131,6 @@ class Schema {
 		}
 	}
 
-	/**
-	 * Returns the fixed error type name to ID map.
-	 *
-	 * @return array
-	 */
 	public static function get_error_type_ids() {
 		return array(
 			'Cloudflare Bypass'     => self::ERROR_TYPE_CF_BYPASS,
