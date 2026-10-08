@@ -1,0 +1,37 @@
+Nothing looks like a syntax error or fatal, but I found one definite functional bug, one logic inconsistency, and a few weaker spots. They are ordered by severity below. I only reviewed the files you pasted, so anything in files like `uninstall.php` is outside this review.
+
+**1. The daily purge never runs (definite bug)**
+
+`Activator::activate()` in `includes/class-activator.php` schedules a daily cron event named `attacklog_purge`, and `Deactivator::deactivate()` clears it. Nothing in the pasted code registers a callback for that hook. `Plugin::boot()` doesn't call `add_action( 'attacklog_purge', ... )`, and `Repository` has no method that deletes rows older than a cutoff.
+
+The log view in `admin/views/log.php` still tells the user "Auto-clean: entries older than 30 days are removed daily", so that message is currently false. The log table will grow without bound until someone clicks "Clear all".
+
+The `keep_days` value is read from the `attacklog_settings` option, and nothing in the shown code ever writes that option. The same goes for `extra_probe_patterns` and `extra_suspicious_ua_patterns`. There is no settings page, so those options are only reachable through direct database edits.
+
+**2. Admin-side IP selection disagrees with runtime matching (logic inconsistency)**
+
+At request time, `Whitelist::resolve_ip_for_matching()` uses `client_ip` only when `is_cloudflare_trusted()` is true. That requires the bypass-detection switch to be on and all three CF headers to be present.
+
+The admin side, however, decides purely from the stored headers. `Admin_Page::get_whitelist_ip_for_row()` uses `client_ip` whenever the row has `cf_ray`, `cf_ipcountry` and `cf_visitor`. `Repository::delete_requests_by_ip()` uses the same header-only condition.
+
+If detection is switched off on a site that is behind Cloudflare, the "+ IP" button prefills the real visitor IP. At runtime the whitelist compares against `REMOTE_ADDR`, which is Cloudflare's edge address, so the entry never matches and requests keep getting logged. The fix is to apply the same trust rule in both places, or to store which IP was used for matching in each row.
+
+**3. The direct-PHP uploads pattern breaks on subdirectory installs (likely bug)**
+
+`Direct_Php_Rule::get_uploads_path()` takes the path from `wp_upload_dir()['baseurl']`. On a site at `https://example.com/blog`, that gives `/blog/wp-content/uploads`. But `Request_Context::normalize_path()` strips the site's home path from the request, so the path being tested is `/wp-content/uploads/x.php`. The `^/blog/wp-content/uploads/...` pattern can never match there. The uploads path needs the home path stripped in the same way.
+
+**4. Cloudflare headers are trusted without verification (design weakness)**
+
+`Cf_Detector::request_has_all_cf_headers()` only checks that the headers exist, and `Ip_Resolver::resolve_client_ip()` trusts `CF-Connecting-IP` without checking the connecting address.
+
+Anyone who reaches the origin directly can send forged `CF-Ray`, `CF-IPCountry` and `CF-Visitor` headers. That defeats `Cf_Bypass_Rule`, which is the point of the feature. They can also forge `CF-Connecting-IP` to impersonate a whitelisted IP and suppress logging. Checking `REMOTE_ADDR` against Cloudflare's published IP ranges would close this.
+
+**5. Smaller issues**
+
+- `Logger::write_log_entry()` doesn't check that `insert_request()` succeeded. If it returns 0, `insert_request_errors()` writes orphan rows with `request_id` 0. There is also no explicit `ROLLBACK` if something throws between `START TRANSACTION` and `COMMIT`. It is only rescued because the connection closes at shutdown.
+- The upserts of `request_types` and `user_agents` happen before the transaction starts. A concurrent `Repository::cleanup_orphans()` could delete the freshly upserted parent row before the request row references it, since there are no foreign keys.
+- `Probe_Rule` and `Suspicious_Ua_Rule` wrap user-supplied patterns in `#...#i`. A custom pattern containing `#` or invalid regex would make `preg_match` fail with a warning, and `Probe_Rule::get_compiled_pattern()` combines all patterns into one regex, so a single bad pattern disables the whole rule.
+- The default probe patterns `backup` and `dump` are very broad. They will flag legitimate 404s such as `/backup-your-site-guide`.
+- `Request_Context::normalize_path()` uses `wp_parse_url()` on `REQUEST_URI`. A URI beginning with `//` is parsed as a host plus path, which silently drops the first segment.
+
+If you want to fix things in order, start with the missing purge handler (1), then the IP rule mismatch (2).
