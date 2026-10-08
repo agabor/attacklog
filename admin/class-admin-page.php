@@ -5,7 +5,9 @@ namespace AttackLog\Admin;
 use AttackLog\Cf_Detector;
 use AttackLog\Ip_Resolver;
 use AttackLog\Repository;
+use AttackLog\Request_Context;
 use AttackLog\Schema;
+use AttackLog\Whitelist;
 
 defined( 'ABSPATH' ) || exit;
 
@@ -19,15 +21,24 @@ class Admin_Page {
 
 	const PER_PAGE = 50;
 
+	const SECTION_PARAM = 'section';
+
+	const SECTION_LOG = 'log';
+
+	const SECTION_WHITELIST = 'whitelist';
+
 	private $repository;
 
 	private $ip_resolver;
+
+	private $whitelist;
 
 	private $page_hook = '';
 
 	public function __construct( Repository $repository ) {
 		$this->repository  = $repository;
 		$this->ip_resolver = new Ip_Resolver();
+		$this->whitelist   = new Whitelist();
 	}
 
 	public function register_hooks(): void {
@@ -95,6 +106,12 @@ class Admin_Page {
 					'errorGeneric'                   => __( 'Something went wrong. Please try again.', 'attack-log' ),
 					'on'                             => __( 'On', 'attack-log' ),
 					'off'                            => __( 'Off', 'attack-log' ),
+					'confirmDeleteEntry'             => __( 'Remove this entry from the whitelist?', 'attack-log' ),
+					'addEntryTitle'                  => __( 'Add whitelist entry', 'attack-log' ),
+					'editEntryTitle'                 => __( 'Edit whitelist entry', 'attack-log' ),
+					'noCurrentIp'                    => __( 'Your current IP address could not be determined.', 'attack-log' ),
+					'ipPlaceholder'                  => __( '203.0.113.7', 'attack-log' ),
+					'uaPlaceholder'                  => __( 'Mozilla/5.0 (compatible; MyMonitor/1.0)', 'attack-log' ),
 				),
 			)
 		);
@@ -105,9 +122,51 @@ class Admin_Page {
 			wp_die( esc_html__( 'You do not have permission to access this page.', 'attack-log' ) );
 		}
 
+		if ( self::SECTION_WHITELIST === $this->get_current_section() ) {
+			$view_data = $this->get_whitelist_view_data();
+
+			require ATTACKLOG_PLUGIN_DIR . 'admin/views/whitelist.php';
+
+			return;
+		}
+
 		$view_data = $this->get_log_view_data();
 
 		require ATTACKLOG_PLUGIN_DIR . 'admin/views/log.php';
+	}
+
+	public function get_current_section(): string {
+		$requested_section = isset( $_GET[ self::SECTION_PARAM ] ) ? sanitize_key( wp_unslash( $_GET[ self::SECTION_PARAM ] ) ) : '';
+
+		return self::SECTION_WHITELIST === $requested_section ? self::SECTION_WHITELIST : self::SECTION_LOG;
+	}
+
+	public function build_section_url( string $section ): string {
+		if ( self::SECTION_LOG === $section ) {
+			return $this->build_page_url( array() );
+		}
+
+		return $this->build_page_url( array( self::SECTION_PARAM => $section ) );
+	}
+
+	public function get_section_view_models( string $current_section ): array {
+		$section_labels = array(
+			self::SECTION_LOG       => __( 'Log', 'attack-log' ),
+			self::SECTION_WHITELIST => __( 'Whitelist', 'attack-log' ),
+		);
+
+		$sections = array();
+
+		foreach ( $section_labels as $section_slug => $section_label ) {
+			$sections[] = array(
+				'slug'      => $section_slug,
+				'label'     => $section_label,
+				'url'       => $this->build_section_url( $section_slug ),
+				'is_active' => $current_section === $section_slug,
+			);
+		}
+
+		return $sections;
 	}
 
 	public function get_tab_definitions(): array {
@@ -247,6 +306,7 @@ class Admin_Page {
 		);
 
 		return array(
+			'sections'           => $this->get_section_view_models( self::SECTION_LOG ),
 			'tabs'               => $tabs,
 			'current_tab'        => $current_tab,
 			'sort'               => $this->build_sort_view_model( $current_slug, $sort ),
@@ -264,6 +324,40 @@ class Admin_Page {
 				'description' => $this->describe_cf_set_by( $cloudflare_status ),
 			),
 		);
+	}
+
+	public function get_whitelist_view_data(): array {
+		$entries = array();
+
+		foreach ( $this->whitelist->get_entries() as $entry ) {
+			$entries[] = $this->build_whitelist_entry_view_model( $entry );
+		}
+
+		return array(
+			'sections'         => $this->get_section_view_models( self::SECTION_WHITELIST ),
+			'entries'          => $entries,
+			'category_options' => $this->build_category_options(),
+			'current_ip'       => $this->whitelist->resolve_ip_for_matching( Request_Context::capture() ),
+			'ua_hint'          => __( 'Library and monitor User-Agents, such as uptime checkers, can be whitelisted for Suspicious User Agent only, so their requests are still logged if they probe for other things.', 'attack-log' ),
+		);
+	}
+
+	public function describe_whitelist_categories( $categories ): string {
+		if ( Whitelist::CATEGORY_ALL === $categories ) {
+			return __( 'All', 'attack-log' );
+		}
+
+		$labels = array();
+
+		foreach ( (array) $categories as $error_type_id ) {
+			$label = $this->get_error_type_label( $error_type_id );
+
+			if ( '' !== $label ) {
+				$labels[] = $label;
+			}
+		}
+
+		return implode( ', ', $labels );
 	}
 
 	public function describe_cf_set_by( array $status ): string {
@@ -302,6 +396,38 @@ class Admin_Page {
 			$display_name,
 			$set_date
 		);
+	}
+
+	private function build_whitelist_entry_view_model( array $entry ): array {
+		$is_ip_entry  = Whitelist::TYPE_IP === $entry['type'];
+		$creator      = ! empty( $entry['created_by'] ) ? get_userdata( (int) $entry['created_by'] ) : false;
+		$created_date = ! empty( $entry['created_at'] ) ? get_date_from_gmt( $entry['created_at'], 'Y-m-d H:i:s' ) : '';
+
+		return array(
+			'id'         => (string) $entry['id'],
+			'type'       => (string) $entry['type'],
+			'type_label' => $is_ip_entry ? __( 'IP', 'attack-log' ) : __( 'UA', 'attack-log' ),
+			'value'      => (string) $entry['value'],
+			'categories' => $entry['categories'],
+			'applies_to' => $this->describe_whitelist_categories( $entry['categories'] ),
+			'note'       => (string) $entry['note'],
+			'created_at' => $created_date,
+			'created_by' => $creator ? $creator->display_name : '',
+			'entry_json' => (string) wp_json_encode( $entry ),
+		);
+	}
+
+	private function build_category_options(): array {
+		$category_options = array();
+
+		foreach ( array_values( Schema::get_error_type_ids() ) as $error_type_id ) {
+			$category_options[] = array(
+				'id'    => $error_type_id,
+				'label' => $this->get_error_type_label( $error_type_id ),
+			);
+		}
+
+		return $category_options;
 	}
 
 	private function find_tab_by_slug( $tab_slug ): array {

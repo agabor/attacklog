@@ -345,6 +345,79 @@ class Repository {
 		return $total_deleted;
 	}
 
+	public function delete_requests_by_ip( string $binary_ip, array $error_type_ids ): int {
+		global $wpdb;
+
+		$prepared_condition_sql = $wpdb->prepare(
+			'((r.cf_ray IS NOT NULL AND r.cf_ipcountry IS NOT NULL AND r.cf_visitor IS NOT NULL AND r.client_ip = %s) OR ((r.cf_ray IS NULL OR r.cf_ipcountry IS NULL OR r.cf_visitor IS NULL) AND r.remote_addr = %s))',
+			$binary_ip,
+			$binary_ip
+		);
+
+		return $this->delete_error_rows_for_matching_requests( $prepared_condition_sql, $error_type_ids );
+	}
+
+	public function delete_requests_by_user_agent( string $user_agent, array $error_type_ids ): int {
+		global $wpdb;
+
+		$user_agents_table = Schema::get_table_name( 'user_agents' );
+
+		$prepared_condition_sql = $wpdb->prepare(
+			"r.user_agent_id IN (SELECT ua.id FROM {$user_agents_table} ua WHERE BINARY ua.user_agent = %s)",
+			$user_agent
+		);
+
+		return $this->delete_error_rows_for_matching_requests( $prepared_condition_sql, $error_type_ids );
+	}
+
+	private function delete_error_rows_for_matching_requests( string $prepared_condition_sql, array $error_type_ids ): int {
+		global $wpdb;
+
+		$requests_table = Schema::get_table_name( 'requests' );
+		$errors_table   = Schema::get_table_name( 'request_errors' );
+		$select_filter  = $this->build_error_type_filter( 'e.error_type_id', $error_type_ids );
+		$delete_filter  = $this->build_error_type_filter( 'error_type_id', $error_type_ids );
+		$limit_clause   = $wpdb->prepare( 'LIMIT %d', self::BATCH_SIZE );
+		$total_requests = 0;
+
+		do {
+			$request_ids = $wpdb->get_col(
+				"SELECT DISTINCT r.id FROM {$requests_table} r INNER JOIN {$errors_table} e ON e.request_id = r.id WHERE {$prepared_condition_sql} {$select_filter} {$limit_clause}"
+			);
+
+			if ( empty( $request_ids ) ) {
+				break;
+			}
+
+			$id_placeholders = implode( ',', array_fill( 0, count( $request_ids ), '%d' ) );
+			$id_clause       = $wpdb->prepare( "request_id IN ({$id_placeholders})", $request_ids );
+
+			$wpdb->query( "DELETE FROM {$errors_table} WHERE {$id_clause} {$delete_filter}" );
+
+			$total_requests += count( $request_ids );
+		} while ( count( $request_ids ) === self::BATCH_SIZE );
+
+		if ( $total_requests > 0 ) {
+			$this->cleanup_orphans();
+		}
+
+		return $total_requests;
+	}
+
+	private function build_error_type_filter( string $column_name, array $error_type_ids ): string {
+		global $wpdb;
+
+		$error_type_ids = array_values( array_unique( array_map( 'intval', $error_type_ids ) ) );
+
+		if ( empty( $error_type_ids ) ) {
+			return '';
+		}
+
+		$placeholders = implode( ',', array_fill( 0, count( $error_type_ids ), '%d' ) );
+
+		return $wpdb->prepare( "AND {$column_name} IN ({$placeholders})", $error_type_ids );
+	}
+
 	public function delete_all(): void {
 		$this->delete_all_rows_in_batches( Schema::get_table_name( 'request_errors' ) );
 		$this->delete_all_rows_in_batches( Schema::get_table_name( 'requests' ) );

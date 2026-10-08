@@ -4,6 +4,7 @@ namespace AttackLog;
 
 use AttackLog\Admin\Admin_Page;
 use AttackLog\Admin\Log_Controller;
+use AttackLog\Admin\Whitelist_Controller;
 use AttackLog\Rules\Cf_Bypass_Rule;
 use AttackLog\Rules\Probe_Rule;
 use AttackLog\Rules\Direct_Php_Rule;
@@ -43,6 +44,7 @@ class Plugin {
 		$probe_rule         = new Probe_Rule();
 		$direct_php_rule    = new Direct_Php_Rule();
 		$suspicious_ua_rule = new Suspicious_Ua_Rule();
+		$whitelist          = new Whitelist();
 
 		$this->xmlrpc_rule = new Xmlrpc_Rule();
 
@@ -51,7 +53,8 @@ class Plugin {
 			$probe_rule,
 			$direct_php_rule,
 			$this->xmlrpc_rule,
-			$suspicious_ua_rule
+			$suspicious_ua_rule,
+			$whitelist
 		);
 
 		$this->repository = new Repository();
@@ -69,11 +72,13 @@ class Plugin {
 	}
 
 	private function boot_admin(): void {
-		$admin_page     = new Admin_Page( $this->repository );
-		$log_controller = new Log_Controller( $this->repository );
+		$admin_page           = new Admin_Page( $this->repository );
+		$log_controller       = new Log_Controller( $this->repository );
+		$whitelist_controller = new Whitelist_Controller( $this->repository );
 
 		$admin_page->register_hooks();
 		$log_controller->register_hooks();
+		$whitelist_controller->register_hooks();
 	}
 
 	public function register_runtime_hooks() {

@@ -23,18 +23,22 @@ class Classifier {
 
 	private $suspicious_ua_rule;
 
+	private $whitelist;
+
 	public function __construct(
 		Cf_Bypass_Rule $cf_bypass_rule,
 		Probe_Rule $probe_rule,
 		Direct_Php_Rule $direct_php_rule,
 		Xmlrpc_Rule $xmlrpc_rule,
-		Suspicious_Ua_Rule $suspicious_ua_rule
+		Suspicious_Ua_Rule $suspicious_ua_rule,
+		Whitelist $whitelist
 	) {
 		$this->cf_bypass_rule     = $cf_bypass_rule;
 		$this->probe_rule         = $probe_rule;
 		$this->direct_php_rule    = $direct_php_rule;
 		$this->xmlrpc_rule        = $xmlrpc_rule;
 		$this->suspicious_ua_rule = $suspicious_ua_rule;
+		$this->whitelist          = $whitelist;
 	}
 
 	public function should_skip( Request_Context $context ) {
@@ -140,6 +144,12 @@ class Classifier {
 	}
 
 	public function filter_whitelisted( array $matches, Request_Context $context ) {
-		return $matches;
+		if ( empty( $matches ) ) {
+			return $matches;
+		}
+
+		$suppressed_error_type_ids = $this->whitelist->get_suppressed_error_type_ids( $context );
+
+		return array_diff_key( $matches, array_flip( $suppressed_error_type_ids ) );
 	}
 }
