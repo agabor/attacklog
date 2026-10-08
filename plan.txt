@@ -1,0 +1,122 @@
+Goal: Implement Milestone M1 (Core) — database schema, activation/deactivation, Cloudflare detection, IP/UA capture, the five classification rules, and the logging pipeline, with no admin UI yet.
+
+Steps:
+
+1. Create plugin bootstrap (attack-log.php):
+   - Plugin header comment (Name, Description, Version 1.0.0, Requires PHP 7.4, Requires at least 6.0, License GPLv2 or later, Text Domain attack-log).
+   - Define constants: ATTACKLOG_VERSION, ATTACKLOG_PLUGIN_FILE, ATTACKLOG_PLUGIN_DIR, ATTACKLOG_PLUGIN_URL.
+   - attacklog_autoload( string $class ): void — PSR-4-less autoloader mapping `AttackLog\` and `AttackLog\Rules\` namespaces to `includes/` and `includes/rules/`, converting class names to `class-*.php` filenames.
+   - spl_autoload_register( 'attacklog_autoload' ) call.
+   - register_activation_hook( ATTACKLOG_PLUGIN_FILE, [ 'AttackLog\\Activator', 'activate' ] )
+   - register_deactivation_hook( ATTACKLOG_PLUGIN_FILE, [ 'AttackLog\\Deactivator', 'deactivate' ] )
+   - add_action( 'plugins_loaded', [ AttackLog\Plugin::instance(), 'boot' ] )
+
+2. Create schema manager (includes/class-schema.php), class AttackLog\Schema:
+   - const DB_VERSION — current schema version string.
+   - get_table_name( string $suffix ): string — returns `{$wpdb->prefix}attacklog_{$suffix}`.
+   - create_or_upgrade(): void — compares stored `attacklog_db_version` option to DB_VERSION; if different, runs dbDelta() with get_schema_sql(), calls seed_error_types(), updates the option.
+   - get_schema_sql(): array — returns dbDelta-formatted CREATE TABLE statements for `request_types`, `error_types`, `requests`, `request_errors`, `user_agents` per sections 8.1–8.4.
+   - seed_error_types(): void — `INSERT IGNORE` the five fixed rows (Cloudflare Bypass, Probing, Direct PHP Access, XML-RPC, Suspicious User Agent) into `error_types`.
+   - get_error_type_ids(): array — returns the fixed name→id map mirrored as PHP constants (CF_BYPASS=1, PROBING=2, DIRECT_PHP=3, XMLRPC=4, SUSPICIOUS_UA=5).
+
+3. Create activator (includes/class-activator.php), class AttackLog\Activator:
+   - activate(): void — calls Schema::create_or_upgrade(), calls Cf_Detector::maybe_auto_set_on_activation(), schedules the `attacklog_purge` daily cron event if not already scheduled (handler to be added in M5).
+
+4. Create deactivator (includes/class-deactivator.php), class AttackLog\Deactivator:
+   - deactivate(): void — `wp_clear_scheduled_hook( 'attacklog_purge' )`; data and options are left untouched.
+
+5. Create IP resolver (includes/class-ip-resolver.php), class AttackLog\Ip_Resolver:
+   - resolve_client_ip(): string — returns validated `HTTP_CF_CONNECTING_IP` if present and valid, otherwise `REMOTE_ADDR`; result passed through filter `attacklog_client_ip`.
+   - resolve_remote_addr(): string — returns sanitized `$_SERVER['REMOTE_ADDR']`.
+   - is_valid_ip( string $ip ): bool — wraps `filter_var( $ip, FILTER_VALIDATE_IP )`.
+   - normalize_ipv4_mapped( string $ip ): string — converts `::ffff:a.b.c.d` to plain IPv4.
+   - to_binary( string $ip ): ?string — wraps `inet_pton()` after normalization.
+   - to_readable( string $binary ): ?string — wraps `inet_ntop()`.
+
+6. Create Cloudflare detector (includes/class-cf-detector.php), class AttackLog\Cf_Detector:
+   - request_has_all_cf_headers(): bool — true when `HTTP_CF_RAY`, `HTTP_CF_IPCOUNTRY`, `HTTP_CF_VISITOR` are all non-empty.
+   - count_present_cf_headers(): int — number of the three headers present on the current request (used for the "some headers" live-note case).
+   - get_status(): array — returns `attacklog_cf_status` option merged with defaults (`enabled=false`, `state=unknown`, `set_by=null`, `set_at=null`, `user_id=null`).
+   - is_bypass_detection_enabled(): bool — reads `get_status()['enabled']`.
+   - is_cloudflare_trusted_request(): bool — true when `is_bypass_detection_enabled()` and `request_has_all_cf_headers()` (5.1 definition).
+   - maybe_auto_set_on_activation(): void — if no prior state, and an HTTP request is available (`$_SERVER['REQUEST_METHOD']` set), sets `enabled` from `request_has_all_cf_headers()` with `set_by = activation`; otherwise leaves `state = unknown`.
+   - maybe_auto_set_on_first_admin_visit(): void — if `state == unknown`, sets `enabled` from `request_has_all_cf_headers()` with `set_by = first_admin_visit` (to be invoked from the admin page hook added in M2).
+   - set_status( bool $enabled, string $set_by, ?int $user_id = null ): void — persists `attacklog_cf_status` with `state = set`, `set_at = current UTC datetime`.
+
+7. Create request context value object (includes/class-request-context.php), class AttackLog\Request_Context:
+   - public static function capture(): self — builds an instance from `$_SERVER`, `Ip_Resolver`, `Cf_Detector` at `plugins_loaded` time (status code not yet known).
+   - get_method(): string
+   - get_raw_path(): string
+   - get_normalized_path(): string
+   - get_client_ip(): string
+   - get_remote_addr(): string
+   - get_user_agent(): ?string
+   - get_cf_ray(): ?string
+   - get_cf_ipcountry(): ?string
+   - get_cf_visitor(): ?string
+   - has_all_cf_headers(): bool
+   - is_cloudflare_trusted(): bool
+   - get_status_code(): int
+   - set_status_code( int $code ): void — mutator called from the `status_header` filter handler once the final code is known.
+   - is_xmlrpc_request(): bool — true when `XMLRPC_REQUEST` is defined or `get_normalized_path() === '/xmlrpc.php'`.
+   - public static function normalize_path( string $raw_uri ): string — strips query string, URL-decodes once, lowercases, collapses repeated slashes, strips the site subdirectory prefix, truncates to 2048 chars (per 6.3).
+   - public static function sanitize_user_agent( ?string $raw_ua ): ?string — trims, strips control characters, truncates to 512 chars, returns null if empty (per 5.2).
+
+8. Create Cloudflare Bypass rule (includes/rules/class-cf-bypass-rule.php), class AttackLog\Rules\Cf_Bypass_Rule:
+   - matches( Request_Context $context ): bool — true when Cloudflare bypass detection is enabled and `$context->has_all_cf_headers()` is false (6.2).
+   - get_detail( Request_Context $context ): ?string — returns null (no extra detail needed for this type).
+
+9. Create Probing rule (includes/rules/class-probe-rule.php), class AttackLog\Rules\Probe_Rule:
+   - get_default_patterns(): array — default regex fragments grouped as in section 6.3 (env/secrets, VCS/IDE, backups/dumps, wp-config copies, debug/info, admin tools/shells, other stacks).
+   - get_compiled_pattern(): string — combines defaults with filter `attacklog_probe_patterns` into one cached regex per request.
+   - matches( Request_Context $context ): bool — true when `$context->get_status_code() === 404` and `$context->get_normalized_path()` matches `get_compiled_pattern()`.
+   - get_detail( Request_Context $context ): ?string — returns the matched pattern fragment, or null.
+
+10. Create Direct PHP Access rule (includes/rules/class-direct-php-rule.php), class AttackLog\Rules\Direct_Php_Rule:
+    - get_patterns(): array — `wp-includes` and uploads-folder PHP-file regex patterns (resolving `{uploads_path}` via `wp_upload_dir()['baseurl']`), filterable via `attacklog_direct_php_paths`.
+    - matches( Request_Context $context ): bool — true when the normalized path matches any pattern from `get_patterns()`, regardless of status code (6.4).
+    - get_detail( Request_Context $context ): ?string — returns null.
+
+11. Create XML-RPC rule (includes/rules/class-xmlrpc-rule.php), class AttackLog\Rules\Xmlrpc_Rule:
+    - matches( Request_Context $context ): bool — true when `$context->is_xmlrpc_request()` is true (6.5).
+    - register_listeners(): void — hooks `xmlrpc_call` and `xmlrpc_login_error` to internal counters.
+    - on_xmlrpc_call( string $method_name ): void — records top-level/multicall method name and increments the inner-call counter.
+    - on_xmlrpc_login_error( $error ) — increments the failed-login counter and returns `$error` unchanged.
+    - capture_method_name_from_body(): void — bounded read (first 8 KB) of the raw request body, regex-extracts `<methodName>`.
+    - get_detail( Request_Context $context ): ?string — formats detail per 6.5 examples (e.g. `system.multicall ×250 · 250 failed logins`).
+    - reset(): void — resets static counters (for reuse across requests in tests).
+
+12. Create Suspicious User Agent rule (includes/rules/class-suspicious-ua-rule.php), class AttackLog\Rules\Suspicious_Ua_Rule:
+    - get_pattern_groups(): array — associative label => patterns for `missing`, `malformed`, `http-library`, `scanner`, `outdated` per section 6.6, filterable via `attacklog_suspicious_ua_patterns`.
+    - matches( Request_Context $context ): bool — true when `$context->get_user_agent()` matches any group (case-insensitive), or is missing.
+    - get_matched_label_and_token( Request_Context $context ): ?array — returns `[ label, token ]` of the first matching rule.
+    - get_detail( Request_Context $context ): ?string — formats as `label: token` (e.g. `http-library: python-requests/2.32.3`).
+
+13. Create classifier (includes/class-classifier.php), class AttackLog\Classifier:
+    - __construct( Cf_Bypass_Rule $cf_rule, Probe_Rule $probe_rule, Direct_Php_Rule $direct_php_rule, Xmlrpc_Rule $xmlrpc_rule, Suspicious_Ua_Rule $ua_rule ) — stores rule instances.
+    - should_skip( Request_Context $context ): bool — true for `wp_doing_cron()`, `WP_CLI` defined, loopback requests, logged-in users (`is_user_logged_in()` or valid `logged_in` auth cookie), or paths matching filter `attacklog_ignored_paths` (6.1).
+    - evaluate( Request_Context $context ): array — returns `[ error_type_id => detail|null ]`; calls `evaluate_target_rules()` then merges `evaluate_origin_rules()`; returns empty array if nothing matches.
+    - evaluate_target_rules( Request_Context $context ): array — applies Direct PHP Access → XML-RPC → Probing precedence, returning at most one entry (6.7 rule 1).
+    - evaluate_origin_rules( Request_Context $context ): array — applies Cloudflare Bypass and Suspicious User Agent independently (6.7 rule 2).
+    - filter_whitelisted( array $matches, Request_Context $context ): array — placeholder that returns `$matches` unchanged for M1 (whitelist storage/matching is implemented in M3).
+
+14. Create repository (includes/class-repository.php), class AttackLog\Repository:
+    - upsert_request_type( string $method, string $path ): int — upsert into `request_types` using the hash-based `ON DUPLICATE KEY UPDATE … LAST_INSERT_ID(id)` pattern (8.1), returns `request_type_id`.
+    - upsert_user_agent( ?string $user_agent ): ?int — same upsert pattern into `user_agents` (8.4); returns null when `$user_agent` is null.
+    - get_error_type_id( string $name ): ?int — cached lookup against `error_types`.
+    - insert_request( array $data ): int — inserts one row into `requests` (request_type_id, return_code, cf_ray, cf_ipcountry, cf_visitor, client_ip, remote_addr, user_agent_id, created_at); returns `request_id`.
+    - insert_request_errors( int $request_id, array $error_type_ids_with_details ): void — bulk inserts rows into `request_errors` (request_id, error_type_id, detail, created_at).
+
+15. Create logger (includes/class-logger.php), class AttackLog\Logger:
+    - __construct( Classifier $classifier, Repository $repository ) — stores dependencies.
+    - handle( Request_Context $context ): void — shutdown handler: wraps body in try/catch(\Throwable) (failing silently, `error_log` only when `WP_DEBUG`); returns early if `classifier->should_skip()`; evaluates matches via `classifier->evaluate()`, returns early if empty; writes one `requests` row via `repository->upsert_request_type()`, `repository->upsert_user_agent()`, `repository->insert_request()`, then `repository->insert_request_errors()` for all matched types in a single DB transaction.
+
+16. Create plugin wiring (includes/class-plugin.php), class AttackLog\Plugin:
+    - public static function instance(): self — singleton accessor.
+    - boot(): void — called on `plugins_loaded`; runs `Schema::create_or_upgrade()`, builds `$this->request_context = Request_Context::capture()`, instantiates rule objects, `Classifier`, `Repository`, `Logger`, registers `Xmlrpc_Rule::register_listeners()`, and calls `register_runtime_hooks()`.
+    - register_runtime_hooks(): void — adds filters/actions for `status_header`, `shutdown`, `xmlrpc_call`, `xmlrpc_login_error`.
+    - handle_status_header( string $status_header, int $code ): string — calls `$this->request_context->set_status_code( $code )`, returns `$status_header` unchanged.
+    - handle_xmlrpc_call( string $method_name ): void — delegates to the `Xmlrpc_Rule` instance's `on_xmlrpc_call()`.
+    - handle_xmlrpc_login_error( $error ) — delegates to the `Xmlrpc_Rule` instance's `on_xmlrpc_login_error()`, returns the result.
+    - handle_shutdown(): void — calls `$this->logger->handle( $this->request_context )`.
+    - get_request_context(): Request_Context — accessor used by later milestones (e.g. the admin page's live note).
