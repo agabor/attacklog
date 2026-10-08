@@ -2,10 +2,8 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$entries          = $view_data['entries'];
-$category_options = $view_data['category_options'];
-$current_ip       = $view_data['current_ip'];
-$ua_hint          = $view_data['ua_hint'];
+$entries    = $view_data['entries'];
+$current_ip = $view_data['current_ip'];
 ?>
 <div class="wrap attacklog-wrap">
 	<h1 class="attacklog-title"><?php esc_html_e( 'Attack Log', 'attack-log' ); ?></h1>
@@ -23,58 +21,11 @@ $ua_hint          = $view_data['ua_hint'];
 		><?php esc_html_e( 'Add my current IP', 'attack-log' ); ?></button>
 	</div>
 
-	<form class="attacklog-card attacklog-wl-form" id="attacklog-wl-form" hidden>
-		<h2 class="attacklog-wl-form__title" id="attacklog-wl-title"><?php esc_html_e( 'Add whitelist entry', 'attack-log' ); ?></h2>
+	<?php
+	$whitelist_form_is_modal = false;
 
-		<input type="hidden" id="attacklog-wl-id" value="">
-
-		<div class="attacklog-wl-field">
-			<label class="attacklog-wl-field__label" for="attacklog-wl-type"><?php esc_html_e( 'Type', 'attack-log' ); ?></label>
-			<select id="attacklog-wl-type">
-				<option value="ip"><?php esc_html_e( 'IP', 'attack-log' ); ?></option>
-				<option value="ua"><?php esc_html_e( 'User-Agent', 'attack-log' ); ?></option>
-			</select>
-		</div>
-
-		<div class="attacklog-wl-field">
-			<label class="attacklog-wl-field__label" for="attacklog-wl-value"><?php esc_html_e( 'Value (exact match)', 'attack-log' ); ?></label>
-			<input type="text" class="regular-text attacklog-mono" id="attacklog-wl-value" maxlength="512" autocomplete="off">
-			<p class="attacklog-wl-field__hint"><?php echo esc_html( $ua_hint ); ?></p>
-		</div>
-
-		<fieldset class="attacklog-wl-field attacklog-wl-categories">
-			<legend class="attacklog-wl-field__label"><?php esc_html_e( 'Applies to', 'attack-log' ); ?></legend>
-			<label class="attacklog-wl-check">
-				<input type="checkbox" class="attacklog-wl-category" data-category="all" checked>
-				<?php esc_html_e( 'All categories', 'attack-log' ); ?>
-			</label>
-			<?php foreach ( $category_options as $category_option ) : ?>
-				<label class="attacklog-wl-check">
-					<input type="checkbox" class="attacklog-wl-category" data-category="<?php echo esc_attr( (string) $category_option['id'] ); ?>">
-					<?php echo esc_html( $category_option['label'] ); ?>
-				</label>
-			<?php endforeach; ?>
-		</fieldset>
-
-		<div class="attacklog-wl-field">
-			<label class="attacklog-wl-field__label" for="attacklog-wl-note"><?php esc_html_e( 'Note', 'attack-log' ); ?></label>
-			<input type="text" class="regular-text" id="attacklog-wl-note" maxlength="255">
-		</div>
-
-		<div class="attacklog-wl-field">
-			<label class="attacklog-wl-check">
-				<input type="checkbox" id="attacklog-wl-delete-existing">
-				<?php esc_html_e( 'Also delete existing matching rows', 'attack-log' ); ?>
-			</label>
-		</div>
-
-		<p class="attacklog-wl-error" id="attacklog-wl-error" role="alert" hidden></p>
-
-		<div class="attacklog-wl-actions">
-			<button type="submit" class="button button-primary" id="attacklog-wl-save"><?php esc_html_e( 'Save', 'attack-log' ); ?></button>
-			<button type="button" class="button" id="attacklog-wl-cancel"><?php esc_html_e( 'Cancel', 'attack-log' ); ?></button>
-		</div>
-	</form>
+	require ATTACKLOG_PLUGIN_DIR . 'admin/views/whitelist-form.php';
+	?>
 
 	<div class="attacklog-card attacklog-wl-card">
 		<?php if ( empty( $entries ) ) : ?>

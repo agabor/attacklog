@@ -112,6 +112,10 @@ class Admin_Page {
 					'noCurrentIp'                    => __( 'Your current IP address could not be determined.', 'attack-log' ),
 					'ipPlaceholder'                  => __( '203.0.113.7', 'attack-log' ),
 					'uaPlaceholder'                  => __( 'Mozilla/5.0 (compatible; MyMonitor/1.0)', 'attack-log' ),
+					'whitelistIpTitle'               => $this->get_whitelist_button_title( Whitelist::TYPE_IP, false, false ),
+					'whitelistUaTitle'               => $this->get_whitelist_button_title( Whitelist::TYPE_UA, false, false ),
+					'whitelistUaMissing'             => $this->get_whitelist_button_title( Whitelist::TYPE_UA, false, true ),
+					'whitelistExists'                => $this->get_whitelist_button_title( Whitelist::TYPE_IP, true, false ),
 				),
 			)
 		);
@@ -288,13 +292,14 @@ class Admin_Page {
 		$tabs                    = $this->build_tab_view_models( $current_slug, $bypass_detection_enabled );
 		$tabs_by_error_type_id   = $this->index_tabs_by_error_type_id( $tabs );
 		$cloudflare_status       = Cf_Detector::get_status();
+		$whitelist_lookup        = $this->build_whitelist_lookup();
 
 		$rows = array();
 
 		foreach ( $requests as $request_row ) {
 			$row_error_types = isset( $error_types_by_request[ (int) $request_row->id ] ) ? $error_types_by_request[ (int) $request_row->id ] : array();
 
-			$rows[] = $this->build_row_view_model( $request_row, $row_error_types, $current_error_type_id, $tabs_by_error_type_id );
+			$rows[] = $this->build_row_view_model( $request_row, $row_error_types, $current_error_type_id, $tabs_by_error_type_id, $whitelist_lookup );
 		}
 
 		$pagination_base_url = $this->build_page_url(
@@ -317,6 +322,8 @@ class Admin_Page {
 			'pagination_base'    => add_query_arg( 'paged', '%#%', $pagination_base_url ),
 			'badge_column_label' => null === $current_error_type_id ? __( 'Types', 'attack-log' ) : __( 'Also flagged', 'attack-log' ),
 			'rows'               => $rows,
+			'category_options'   => $this->build_category_options(),
+			'ua_hint'            => $this->get_ua_hint(),
 			'cloudflare'         => array(
 				'enabled'     => $bypass_detection_enabled,
 				'live_note'   => Cf_Detector::get_live_note(),
@@ -338,8 +345,12 @@ class Admin_Page {
 			'entries'          => $entries,
 			'category_options' => $this->build_category_options(),
 			'current_ip'       => $this->whitelist->resolve_ip_for_matching( Request_Context::capture() ),
-			'ua_hint'          => __( 'Library and monitor User-Agents, such as uptime checkers, can be whitelisted for Suspicious User Agent only, so their requests are still logged if they probe for other things.', 'attack-log' ),
+			'ua_hint'          => $this->get_ua_hint(),
 		);
+	}
+
+	private function get_ua_hint(): string {
+		return __( 'Library and monitor User-Agents, such as uptime checkers, can be whitelisted for Suspicious User Agent only, so their requests are still logged if they probe for other things.', 'attack-log' );
 	}
 
 	public function describe_whitelist_categories( $categories ): string {
@@ -415,6 +426,90 @@ class Admin_Page {
 			'created_by' => $creator ? $creator->display_name : '',
 			'entry_json' => (string) wp_json_encode( $entry ),
 		);
+	}
+
+	private function build_whitelist_lookup(): array {
+		$whitelist_lookup = array();
+
+		foreach ( $this->whitelist->get_entries() as $entry ) {
+			$lookup_key                      = $this->build_whitelist_lookup_key( (string) $entry['type'], (string) $entry['value'] );
+			$whitelist_lookup[ $lookup_key ] = $this->build_whitelist_entry_view_model( $entry );
+		}
+
+		return $whitelist_lookup;
+	}
+
+	private function build_whitelist_lookup_key( string $type, string $value ): string {
+		return $type . "\n" . $value;
+	}
+
+	private function build_row_whitelist_view_model( $request_row, array $row_error_types, array $whitelist_lookup ): array {
+		$error_type_ids = array_map( 'intval', array_keys( $row_error_types ) );
+
+		sort( $error_type_ids );
+
+		$prefill_categories = empty( $error_type_ids ) ? Whitelist::CATEGORY_ALL : $error_type_ids;
+		$user_agent_value   = null === $request_row->user_agent ? '' : (string) $request_row->user_agent;
+
+		return array(
+			Whitelist::TYPE_IP => $this->build_whitelist_button_view_model(
+				Whitelist::TYPE_IP,
+				$this->get_whitelist_ip_for_row( $request_row ),
+				$prefill_categories,
+				$whitelist_lookup
+			),
+			Whitelist::TYPE_UA => $this->build_whitelist_button_view_model(
+				Whitelist::TYPE_UA,
+				$user_agent_value,
+				$prefill_categories,
+				$whitelist_lookup
+			),
+		);
+	}
+
+	private function build_whitelist_button_view_model( string $type, string $value, $prefill_categories, array $whitelist_lookup ): array {
+		$is_disabled    = '' === $value;
+		$lookup_key     = $this->build_whitelist_lookup_key( $type, $value );
+		$existing_entry = ! $is_disabled && isset( $whitelist_lookup[ $lookup_key ] ) ? $whitelist_lookup[ $lookup_key ] : null;
+
+		return array(
+			'value'         => $value,
+			'disabled'      => $is_disabled,
+			'exists'        => null !== $existing_entry,
+			'title'         => $this->get_whitelist_button_title( $type, null !== $existing_entry, $is_disabled ),
+			'prefill_json'  => (string) wp_json_encode(
+				array(
+					'type'       => $type,
+					'value'      => $value,
+					'categories' => $prefill_categories,
+				)
+			),
+			'existing_json' => null === $existing_entry ? '' : $existing_entry['entry_json'],
+		);
+	}
+
+	private function get_whitelist_button_title( string $type, bool $exists, bool $is_disabled ): string {
+		if ( $is_disabled ) {
+			return Whitelist::TYPE_UA === $type
+				? __( 'A missing User-Agent cannot be whitelisted.', 'attack-log' )
+				: __( 'No IP address is available for this request.', 'attack-log' );
+		}
+
+		if ( $exists ) {
+			return __( 'Already on the whitelist. Click to edit the entry.', 'attack-log' );
+		}
+
+		return Whitelist::TYPE_UA === $type
+			? __( 'Add this User-Agent to the whitelist', 'attack-log' )
+			: __( 'Add this IP address to the whitelist', 'attack-log' );
+	}
+
+	private function get_whitelist_ip_for_row( $request_row ): string {
+		$has_all_cf_headers = ! empty( $request_row->cf_ray ) && ! empty( $request_row->cf_ipcountry ) && ! empty( $request_row->cf_visitor );
+
+		return $has_all_cf_headers
+			? $this->format_ip( $request_row->client_ip )
+			: $this->format_ip( $request_row->remote_addr );
 	}
 
 	private function build_category_options(): array {
@@ -529,7 +624,7 @@ class Admin_Page {
 		return $indexed_tabs;
 	}
 
-	private function build_row_view_model( $request_row, array $row_error_types, $current_error_type_id, array $tabs_by_error_type_id ): array {
+	private function build_row_view_model( $request_row, array $row_error_types, $current_error_type_id, array $tabs_by_error_type_id, array $whitelist_lookup ): array {
 		$client_ip   = $this->format_ip( $request_row->client_ip );
 		$remote_addr = $this->format_ip( $request_row->remote_addr );
 		$status_code = (int) $request_row->return_code;
@@ -546,6 +641,7 @@ class Admin_Page {
 			'addresses_differ' => '' !== $remote_addr && $client_ip !== $remote_addr,
 			'second_line'      => $this->build_second_line( $request_row, $row_error_types, $current_error_type_id ),
 			'badges'           => $this->build_row_badges( $row_error_types, $current_error_type_id, $tabs_by_error_type_id ),
+			'whitelist'        => $this->build_row_whitelist_view_model( $request_row, $row_error_types, $whitelist_lookup ),
 		);
 	}
 

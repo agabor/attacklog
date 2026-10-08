@@ -28,6 +28,11 @@ $live_note_icons = array(
 	'none'    => '○',
 );
 $live_note_icon  = isset( $live_note_icons[ $cf_live_note['status'] ] ) ? $live_note_icons[ $cf_live_note['status'] ] : '○';
+
+$whitelist_button_labels = array(
+	'ip' => __( 'IP', 'attack-log' ),
+	'ua' => __( 'UA', 'attack-log' ),
+);
 ?>
 <div class="wrap attacklog-wrap">
 	<h1 class="attacklog-title"><?php esc_html_e( 'Attack Log', 'attack-log' ); ?></h1>
@@ -114,6 +119,7 @@ $live_note_icon  = isset( $live_note_icons[ $cf_live_note['status'] ] ) ? $live_
 							</th>
 							<th scope="col"><?php esc_html_e( 'IP', 'attack-log' ); ?></th>
 							<th scope="col"><?php echo esc_html( $badge_column_label ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Whitelist', 'attack-log' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -135,6 +141,20 @@ $live_note_icon  = isset( $live_note_icons[ $cf_live_note['status'] ] ) ? $live_
 								<td class="attacklog-cell attacklog-cell--types">
 									<?php foreach ( $row['badges'] as $badge ) : ?>
 										<a class="attacklog-badge <?php echo esc_attr( $badge['badge_class'] ); ?>" href="<?php echo esc_url( $badge['url'] ); ?>"><?php echo esc_html( $badge['label'] ); ?></a>
+									<?php endforeach; ?>
+								</td>
+								<td class="attacklog-cell attacklog-cell--whitelist">
+									<?php foreach ( $whitelist_button_labels as $button_kind => $button_label ) : ?>
+										<?php $whitelist_button = $row['whitelist'][ $button_kind ]; ?>
+										<button
+											type="button"
+											class="button button-small attacklog-wl-row-button<?php echo ! empty( $whitelist_button['exists'] ) ? ' is-existing' : ''; ?>"
+											data-kind="<?php echo esc_attr( $button_kind ); ?>"
+											data-prefill="<?php echo esc_attr( $whitelist_button['prefill_json'] ); ?>"
+											data-existing="<?php echo esc_attr( $whitelist_button['existing_json'] ); ?>"
+											title="<?php echo esc_attr( $whitelist_button['title'] ); ?>"
+											<?php disabled( ! empty( $whitelist_button['disabled'] ) ); ?>
+										><?php echo esc_html( ( ! empty( $whitelist_button['exists'] ) ? '✓ ' : '+ ' ) . $button_label ); ?></button>
 									<?php endforeach; ?>
 								</td>
 							</tr>
@@ -217,4 +237,10 @@ $live_note_icon  = isset( $live_note_icons[ $cf_live_note['status'] ] ) ? $live_
 			</p>
 		</div>
 	</div>
+
+	<?php
+	$whitelist_form_is_modal = true;
+
+	require ATTACKLOG_PLUGIN_DIR . 'admin/views/whitelist-form.php';
+	?>
 </div>

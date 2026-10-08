@@ -18,7 +18,11 @@
 		editEntryTitle: 'Edit whitelist entry',
 		noCurrentIp: 'Your current IP address could not be determined.',
 		ipPlaceholder: '203.0.113.7',
-		uaPlaceholder: 'Mozilla/5.0 (compatible; MyMonitor/1.0)'
+		uaPlaceholder: 'Mozilla/5.0 (compatible; MyMonitor/1.0)',
+		whitelistIpTitle: 'Add this IP address to the whitelist',
+		whitelistUaTitle: 'Add this User-Agent to the whitelist',
+		whitelistUaMissing: 'A missing User-Agent cannot be whitelisted.',
+		whitelistExists: 'Already on the whitelist. Click to edit the entry.'
 	};
 
 	function getString( key ) {
@@ -223,12 +227,16 @@
 		} );
 	}
 
-	function parseEntryData( button ) {
+	function parseJsonAttribute( button, attributeName ) {
 		try {
-			return JSON.parse( button.getAttribute( 'data-entry' ) );
+			return JSON.parse( button.getAttribute( attributeName ) );
 		} catch ( parseError ) {
 			return null;
 		}
+	}
+
+	function parseEntryData( button ) {
+		return parseJsonAttribute( button, 'data-entry' );
 	}
 
 	function initWhitelist() {
@@ -238,6 +246,9 @@
 			return;
 		}
 
+		const modalElement = document.getElementById( 'attacklog-wl-modal' );
+		const container = modalElement || form;
+		const isModal = Boolean( modalElement );
 		const titleElement = document.getElementById( 'attacklog-wl-title' );
 		const idField = document.getElementById( 'attacklog-wl-id' );
 		const typeField = document.getElementById( 'attacklog-wl-type' );
@@ -308,14 +319,24 @@
 			applyCategories( Array.isArray( entryData.categories ) ? entryData.categories : 'all' );
 			updateValuePlaceholder();
 			clearFormError();
+			saveButton.disabled = false;
 
-			form.hidden = false;
+			container.hidden = false;
+
+			if ( isModal ) {
+				document.body.classList.add( 'modal-open' );
+			}
+
 			valueField.focus();
 		}
 
 		function closeWhitelistForm() {
-			form.hidden = true;
+			container.hidden = true;
 			clearFormError();
+
+			if ( isModal ) {
+				document.body.classList.remove( 'modal-open' );
+			}
 		}
 
 		function collectWhitelistFormData() {
@@ -411,14 +432,55 @@
 			}
 		}
 
-		addButton.addEventListener( 'click', function () {
-			openWhitelistForm( 'add', {} );
-		} );
+		function handleRowWhitelistButton( button ) {
+			if ( '' !== ( button.getAttribute( 'data-existing' ) || '' ) ) {
+				const existingEntry = parseJsonAttribute( button, 'data-existing' );
 
-		addCurrentIpButton.addEventListener( 'click', handleAddCurrentIp );
-		cancelButton.addEventListener( 'click', closeWhitelistForm );
+				if ( existingEntry ) {
+					openWhitelistForm( 'edit', existingEntry );
+					return;
+				}
+			}
+
+			const prefillEntry = parseJsonAttribute( button, 'data-prefill' );
+
+			if ( prefillEntry ) {
+				openWhitelistForm( 'add', prefillEntry );
+			}
+		}
+
+		function handleContainerClick( event ) {
+			const clickedBackdrop = event.target === container || event.target.classList.contains( 'attacklog-wl-modal__backdrop' );
+
+			if ( isModal && clickedBackdrop ) {
+				closeWhitelistForm();
+			}
+		}
+
+		function handleEscapeKey( event ) {
+			if ( isModal && 'Escape' === event.key && ! container.hidden ) {
+				closeWhitelistForm();
+			}
+		}
+
+		if ( addButton ) {
+			addButton.addEventListener( 'click', function () {
+				openWhitelistForm( 'add', {} );
+			} );
+		}
+
+		if ( addCurrentIpButton ) {
+			addCurrentIpButton.addEventListener( 'click', handleAddCurrentIp );
+		}
+
+		if ( cancelButton ) {
+			cancelButton.addEventListener( 'click', closeWhitelistForm );
+		}
+
 		typeField.addEventListener( 'change', updateValuePlaceholder );
 		form.addEventListener( 'submit', submitWhitelistForm );
+		container.addEventListener( 'click', handleContainerClick );
+		document.addEventListener( 'keydown', handleEscapeKey );
 
 		categoryBoxes.forEach( function ( box ) {
 			box.addEventListener( 'change', function () {
@@ -435,6 +497,16 @@
 		Array.prototype.forEach.call( document.querySelectorAll( '.attacklog-wl-delete' ), function ( button ) {
 			button.addEventListener( 'click', function () {
 				handleDeleteEntry( button );
+			} );
+		} );
+
+		Array.prototype.forEach.call( document.querySelectorAll( '.attacklog-wl-row-button' ), function ( button ) {
+			if ( button.disabled ) {
+				return;
+			}
+
+			button.addEventListener( 'click', function () {
+				handleRowWhitelistButton( button );
 			} );
 		} );
 
