@@ -75,4 +75,5 @@ spl_autoload_register( 'attacklog_autoload' );
 register_activation_hook( ATTACKLOG_PLUGIN_FILE, array( 'AttackLog\\Activator', 'activate' ) );
 register_deactivation_hook( ATTACKLOG_PLUGIN_FILE, array( 'AttackLog\\Deactivator', 'deactivate' ) );
 
+add_action( 'plugins_loaded', array( 'AttackLog\\Schema', 'create_or_upgrade' ), 8 );
 add_action( 'plugins_loaded', array( AttackLog\Plugin::instance(), 'boot' ) );

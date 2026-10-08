@@ -112,28 +112,37 @@ class Repository {
 		return (int) $wpdb->insert_id;
 	}
 
-	public function insert_request_errors( $request_id, array $error_type_ids_with_details ) {
+	public function insert_request_errors( $request_id, array $error_type_ids_with_details, $created_at ) {
 		global $wpdb;
 
 		if ( empty( $error_type_ids_with_details ) ) {
 			return;
 		}
 
-		$table        = Schema::get_table_name( 'request_errors' );
-		$current_time = gmdate( 'Y-m-d H:i:s' );
+		$table              = Schema::get_table_name( 'request_errors' );
+		$value_placeholders = array();
+		$query_arguments    = array();
 
 		foreach ( $error_type_ids_with_details as $error_type_id => $detail ) {
-			$wpdb->insert(
-				$table,
-				array(
-					'request_id'    => $request_id,
-					'error_type_id' => $error_type_id,
-					'detail'        => $detail,
-					'created_at'    => $current_time,
-				),
-				array( '%d', '%d', '%s', '%s' )
-			);
+			$query_arguments[] = (int) $request_id;
+			$query_arguments[] = (int) $error_type_id;
+
+			if ( null === $detail ) {
+				$value_placeholders[] = '(%d, %d, NULL, %s)';
+			} else {
+				$value_placeholders[] = '(%d, %d, %s, %s)';
+				$query_arguments[]    = $detail;
+			}
+
+			$query_arguments[] = $created_at;
 		}
+
+		$wpdb->query(
+			$wpdb->prepare(
+				"INSERT INTO {$table} (request_id, error_type_id, detail, created_at) VALUES " . implode( ', ', $value_placeholders ),
+				$query_arguments
+			)
+		);
 
 		$this->invalidate_cache();
 	}

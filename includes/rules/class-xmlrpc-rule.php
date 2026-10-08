@@ -74,7 +74,7 @@ class Xmlrpc_Rule {
 		$detail_parts = array();
 
 		if ( self::$method_name && self::$inner_call_count > 1 ) {
-			$detail_parts[] = self::$method_name . ' \u00d7' . self::$inner_call_count;
+			$detail_parts[] = self::$method_name . " \u{00d7}" . self::$inner_call_count;
 		} elseif ( self::$method_name ) {
 			$detail_parts[] = self::$method_name;
 		} else {
@@ -85,7 +85,7 @@ class Xmlrpc_Rule {
 			$detail_parts[] = self::$failed_login_count . ' failed logins';
 		}
 
-		return implode( ' \u00b7 ', $detail_parts );
+		return implode( " \u{00b7} ", $detail_parts );
 	}
 
 	public function reset() {

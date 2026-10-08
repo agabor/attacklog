@@ -37,8 +37,6 @@ class Plugin {
 	}
 
 	public function boot() {
-		Schema::create_or_upgrade();
-
 		$this->request_context = Request_Context::capture();
 
 		$cf_bypass_rule     = new Cf_Bypass_Rule();
@@ -80,8 +78,6 @@ class Plugin {
 
 	public function register_runtime_hooks() {
 		add_filter( 'status_header', array( $this, 'handle_status_header' ), 10, 2 );
-		add_action( 'xmlrpc_call', array( $this, 'handle_xmlrpc_call' ) );
-		add_filter( 'xmlrpc_login_error', array( $this, 'handle_xmlrpc_login_error' ) );
 		add_action( 'shutdown', array( $this, 'handle_shutdown' ) );
 	}
 
@@ -89,14 +85,6 @@ class Plugin {
 		$this->request_context->set_status_code( $code );
 
 		return $status_header;
-	}
-
-	public function handle_xmlrpc_call( $method_name ) {
-		$this->xmlrpc_rule->on_xmlrpc_call( $method_name );
-	}
-
-	public function handle_xmlrpc_login_error( $error ) {
-		return $this->xmlrpc_rule->on_xmlrpc_login_error( $error );
 	}
 
 	public function handle_shutdown() {
