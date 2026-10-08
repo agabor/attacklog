@@ -12,7 +12,13 @@
 		clearAllPrompt: 'This deletes the whole log, all types. Type CLEAR to confirm.',
 		errorGeneric: 'Something went wrong. Please try again.',
 		on: 'On',
-		off: 'Off'
+		off: 'Off',
+		confirmDeleteEntry: 'Remove this entry from the whitelist?',
+		addEntryTitle: 'Add whitelist entry',
+		editEntryTitle: 'Edit whitelist entry',
+		noCurrentIp: 'Your current IP address could not be determined.',
+		ipPlaceholder: '203.0.113.7',
+		uaPlaceholder: 'Mozilla/5.0 (compatible; MyMonitor/1.0)'
 	};
 
 	function getString( key ) {
@@ -217,10 +223,229 @@
 		} );
 	}
 
+	function parseEntryData( button ) {
+		try {
+			return JSON.parse( button.getAttribute( 'data-entry' ) );
+		} catch ( parseError ) {
+			return null;
+		}
+	}
+
+	function initWhitelist() {
+		const form = document.getElementById( 'attacklog-wl-form' );
+
+		if ( ! form ) {
+			return;
+		}
+
+		const titleElement = document.getElementById( 'attacklog-wl-title' );
+		const idField = document.getElementById( 'attacklog-wl-id' );
+		const typeField = document.getElementById( 'attacklog-wl-type' );
+		const valueField = document.getElementById( 'attacklog-wl-value' );
+		const noteField = document.getElementById( 'attacklog-wl-note' );
+		const deleteExistingField = document.getElementById( 'attacklog-wl-delete-existing' );
+		const errorElement = document.getElementById( 'attacklog-wl-error' );
+		const saveButton = document.getElementById( 'attacklog-wl-save' );
+		const cancelButton = document.getElementById( 'attacklog-wl-cancel' );
+		const addButton = document.getElementById( 'attacklog-wl-add' );
+		const addCurrentIpButton = document.getElementById( 'attacklog-wl-add-current-ip' );
+		const categoryBoxes = Array.prototype.slice.call( form.querySelectorAll( '.attacklog-wl-category' ) );
+
+		function showFormError( message ) {
+			errorElement.textContent = message;
+			errorElement.hidden = false;
+		}
+
+		function clearFormError() {
+			errorElement.textContent = '';
+			errorElement.hidden = true;
+		}
+
+		function updateValuePlaceholder() {
+			valueField.placeholder = 'ua' === typeField.value ? getString( 'uaPlaceholder' ) : getString( 'ipPlaceholder' );
+		}
+
+		function applyCategories( categories ) {
+			const selectedIds = Array.isArray( categories ) ? categories.map( String ) : [];
+			const allSelected = ! Array.isArray( categories );
+
+			categoryBoxes.forEach( function ( box ) {
+				const category = box.getAttribute( 'data-category' );
+
+				box.checked = 'all' === category ? allSelected : selectedIds.indexOf( category ) !== -1;
+			} );
+		}
+
+		function syncAllCategoryCheckbox( changedBox ) {
+			if ( ! changedBox.checked ) {
+				return;
+			}
+
+			const changedIsAll = 'all' === changedBox.getAttribute( 'data-category' );
+
+			categoryBoxes.forEach( function ( box ) {
+				const boxIsAll = 'all' === box.getAttribute( 'data-category' );
+
+				if ( box !== changedBox && boxIsAll === changedIsAll ) {
+					return;
+				}
+
+				if ( box !== changedBox ) {
+					box.checked = false;
+				}
+			} );
+		}
+
+		function openWhitelistForm( mode, entry ) {
+			const entryData = entry || {};
+
+			titleElement.textContent = 'edit' === mode ? getString( 'editEntryTitle' ) : getString( 'addEntryTitle' );
+			idField.value = 'edit' === mode && entryData.id ? entryData.id : '';
+			typeField.value = 'ua' === entryData.type ? 'ua' : 'ip';
+			valueField.value = entryData.value || '';
+			noteField.value = entryData.note || '';
+			deleteExistingField.checked = false;
+			applyCategories( Array.isArray( entryData.categories ) ? entryData.categories : 'all' );
+			updateValuePlaceholder();
+			clearFormError();
+
+			form.hidden = false;
+			valueField.focus();
+		}
+
+		function closeWhitelistForm() {
+			form.hidden = true;
+			clearFormError();
+		}
+
+		function collectWhitelistFormData() {
+			const checkedCategories = categoryBoxes
+				.filter( function ( box ) {
+					return box.checked;
+				} )
+				.map( function ( box ) {
+					return box.getAttribute( 'data-category' );
+				} );
+
+			const data = {
+				type: typeField.value,
+				value: valueField.value,
+				categories: checkedCategories.indexOf( 'all' ) !== -1 ? 'all' : checkedCategories.join( ',' ),
+				note: noteField.value,
+				delete_existing: deleteExistingField.checked ? '1' : '0'
+			};
+
+			if ( '' !== idField.value ) {
+				data.id = idField.value;
+			}
+
+			return data;
+		}
+
+		function submitWhitelistForm( event ) {
+			event.preventDefault();
+
+			const data = collectWhitelistFormData();
+			const action = data.id ? 'attacklog_whitelist_update' : 'attacklog_whitelist_add';
+
+			clearFormError();
+			saveButton.disabled = true;
+
+			postAjax( action, data )
+				.then( function ( response ) {
+					if ( ! response || ! response.success ) {
+						saveButton.disabled = false;
+						showFormError( getErrorMessage( response ) );
+						return;
+					}
+
+					window.location.reload();
+				} )
+				.catch( function () {
+					saveButton.disabled = false;
+					showFormError( getString( 'errorGeneric' ) );
+				} );
+		}
+
+		function handleAddCurrentIp() {
+			const currentIp = addCurrentIpButton.getAttribute( 'data-current-ip' );
+
+			if ( ! currentIp ) {
+				window.alert( getString( 'noCurrentIp' ) );
+				return;
+			}
+
+			openWhitelistForm( 'add', { type: 'ip', value: currentIp, categories: 'all' } );
+		}
+
+		function handleDeleteEntry( button ) {
+			const entry = parseEntryData( button );
+
+			if ( ! entry || ! window.confirm( getString( 'confirmDeleteEntry' ) ) ) {
+				return;
+			}
+
+			button.disabled = true;
+
+			postAjax( 'attacklog_whitelist_delete', { id: entry.id } )
+				.then( function ( response ) {
+					if ( ! response || ! response.success ) {
+						button.disabled = false;
+						window.alert( getErrorMessage( response ) );
+						return;
+					}
+
+					window.location.reload();
+				} )
+				.catch( function () {
+					button.disabled = false;
+					window.alert( getString( 'errorGeneric' ) );
+				} );
+		}
+
+		function handleEditEntry( button ) {
+			const entry = parseEntryData( button );
+
+			if ( entry ) {
+				openWhitelistForm( 'edit', entry );
+			}
+		}
+
+		addButton.addEventListener( 'click', function () {
+			openWhitelistForm( 'add', {} );
+		} );
+
+		addCurrentIpButton.addEventListener( 'click', handleAddCurrentIp );
+		cancelButton.addEventListener( 'click', closeWhitelistForm );
+		typeField.addEventListener( 'change', updateValuePlaceholder );
+		form.addEventListener( 'submit', submitWhitelistForm );
+
+		categoryBoxes.forEach( function ( box ) {
+			box.addEventListener( 'change', function () {
+				syncAllCategoryCheckbox( box );
+			} );
+		} );
+
+		Array.prototype.forEach.call( document.querySelectorAll( '.attacklog-wl-edit' ), function ( button ) {
+			button.addEventListener( 'click', function () {
+				handleEditEntry( button );
+			} );
+		} );
+
+		Array.prototype.forEach.call( document.querySelectorAll( '.attacklog-wl-delete' ), function ( button ) {
+			button.addEventListener( 'click', function () {
+				handleDeleteEntry( button );
+			} );
+		} );
+
+		updateValuePlaceholder();
+	}
+
 	function init() {
 		initCloudflareSwitch();
 		initClearType();
 		initClearAll();
+		initWhitelist();
 	}
 
 	if ( 'loading' === document.readyState ) {

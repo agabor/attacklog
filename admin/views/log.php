@@ -32,6 +32,8 @@ $live_note_icon  = isset( $live_note_icons[ $cf_live_note['status'] ] ) ? $live_
 <div class="wrap attacklog-wrap">
 	<h1 class="attacklog-title"><?php esc_html_e( 'Attack Log', 'attack-log' ); ?></h1>
 
+	<?php require ATTACKLOG_PLUGIN_DIR . 'admin/views/section-nav.php'; ?>
+
 	<div class="attacklog-card attacklog-cf-card">
 		<p class="attacklog-cf-note attacklog-cf-note--<?php echo esc_attr( $cf_live_note['status'] ); ?>">
 			<span class="attacklog-cf-note__icon" aria-hidden="true"><?php echo esc_html( $live_note_icon ); ?></span>
