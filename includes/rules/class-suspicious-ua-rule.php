@@ -60,18 +60,6 @@ class Suspicious_Ua_Rule {
 			),
 		);
 
-		$stored_settings = get_option( 'attacklog_settings', array() );
-
-		if ( ! empty( $stored_settings['extra_suspicious_ua_patterns'] ) ) {
-			$extra_patterns = array_filter(
-				array_map( 'trim', explode( "\n", $stored_settings['extra_suspicious_ua_patterns'] ) )
-			);
-
-			if ( ! empty( $extra_patterns ) ) {
-				$default_groups['scanner'] = array_merge( $default_groups['scanner'], $extra_patterns );
-			}
-		}
-
 		return apply_filters( 'attacklog_suspicious_ua_patterns', $default_groups );
 	}
 

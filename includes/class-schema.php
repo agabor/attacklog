@@ -6,7 +6,7 @@ defined( 'ABSPATH' ) || exit;
 
 class Schema {
 
-	const DB_VERSION = '1.0.0';
+	const DB_VERSION = '1.0.1';
 
 	const ERROR_TYPE_CF_BYPASS = 1;
 
@@ -38,6 +38,8 @@ class Schema {
 		}
 
 		self::seed_error_types();
+
+		delete_option( 'attacklog_settings' );
 
 		update_option( 'attacklog_db_version', self::DB_VERSION );
 	}

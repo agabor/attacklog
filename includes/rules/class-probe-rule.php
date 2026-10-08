@@ -58,19 +58,7 @@ class Probe_Rule {
 
 
 	public function get_patterns() {
-		$default_patterns = $this->get_default_patterns();
-		$stored_settings  = get_option( 'attacklog_settings', array() );
-		$extra_patterns   = array();
-
-		if ( ! empty( $stored_settings['extra_probe_patterns'] ) ) {
-			$extra_patterns = array_filter(
-				array_map( 'trim', explode( "\n", $stored_settings['extra_probe_patterns'] ) )
-			);
-		}
-
-		$all_patterns = array_merge( $default_patterns, $extra_patterns );
-
-		return apply_filters( 'attacklog_probe_patterns', $all_patterns );
+		return apply_filters( 'attacklog_probe_patterns', $this->get_default_patterns() );
 	}
 
 	public function get_compiled_pattern() {

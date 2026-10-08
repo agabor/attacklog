@@ -58,10 +58,6 @@ class Classifier {
 			return true;
 		}
 
-		if ( $this->is_ignored_path( $context ) ) {
-			return true;
-		}
-
 		return false;
 	}
 
@@ -91,17 +87,6 @@ class Classifier {
 		}
 
 		return (bool) wp_validate_auth_cookie( '', 'logged_in' );
-	}
-
-	private function is_ignored_path( Request_Context $context ) {
-
-		$ignored_paths = apply_filters( 'attacklog_ignored_paths', array() );
-
-		if ( empty( $ignored_paths ) ) {
-			return false;
-		}
-
-		return in_array( $context->get_normalized_path(), $ignored_paths, true );
 	}
 
 	public function evaluate( Request_Context $context ) {

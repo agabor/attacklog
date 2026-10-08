@@ -19,8 +19,7 @@ $cf_set_by_text    = $cloudflare['description'];
 $detection_enabled = ! empty( $cloudflare['enabled'] );
 $is_all_tab        = null === $current_tab['error_type_id'];
 
-$stored_settings = get_option( 'attacklog_settings', array() );
-$keep_days       = is_array( $stored_settings ) && ! empty( $stored_settings['keep_days'] ) ? (int) $stored_settings['keep_days'] : 30;
+$keep_days = \AttackLog\Cron::KEEP_DAYS;
 
 $live_note_icons = array(
 	'full'    => '✓',

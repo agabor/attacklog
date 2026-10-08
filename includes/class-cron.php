@@ -8,11 +8,7 @@ class Cron {
 
 	const HOOK = 'attacklog_purge';
 
-	const DEFAULT_KEEP_DAYS = 30;
-
-	const MIN_KEEP_DAYS = 1;
-
-	const MAX_KEEP_DAYS = 365;
+	const KEEP_DAYS = 30;
 
 	private $repository;
 
@@ -46,13 +42,6 @@ class Cron {
 	}
 
 	public function get_keep_days(): int {
-		$stored_settings = get_option( 'attacklog_settings', array() );
-		$keep_days       = self::DEFAULT_KEEP_DAYS;
-
-		if ( is_array( $stored_settings ) && ! empty( $stored_settings['keep_days'] ) && is_numeric( $stored_settings['keep_days'] ) ) {
-			$keep_days = (int) $stored_settings['keep_days'];
-		}
-
-		return max( self::MIN_KEEP_DAYS, min( self::MAX_KEEP_DAYS, $keep_days ) );
+		return self::KEEP_DAYS;
 	}
 }
