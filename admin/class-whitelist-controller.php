@@ -34,7 +34,7 @@ class Whitelist_Controller {
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'You are not allowed to do this.', 'attack-log' ) ),
+				array( 'message' => __( 'You are not allowed to do this.', 'attacklog' ) ),
 				403
 			);
 		}
@@ -63,7 +63,7 @@ class Whitelist_Controller {
 
 		if ( ! $this->whitelist->delete_entry( $this->read_entry_id() ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Whitelist entry not found.', 'attack-log' ) ),
+				array( 'message' => __( 'Whitelist entry not found.', 'attacklog' ) ),
 				404
 			);
 		}

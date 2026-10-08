@@ -127,7 +127,7 @@ class Whitelist {
 		$type = isset( $input['type'] ) ? sanitize_key( (string) $input['type'] ) : '';
 
 		if ( ! in_array( $type, array( self::TYPE_IP, self::TYPE_UA ), true ) ) {
-			return new \WP_Error( 'attacklog_whitelist_invalid_type', __( 'Choose IP or User-Agent as the entry type.', 'attack-log' ) );
+			return new \WP_Error( 'attacklog_whitelist_invalid_type', __( 'Choose IP or User-Agent as the entry type.', 'attacklog' ) );
 		}
 
 		$raw_value = isset( $input['value'] ) ? (string) $input['value'] : '';
@@ -140,11 +140,11 @@ class Whitelist {
 		$categories = $this->parse_categories( isset( $input['categories'] ) ? $input['categories'] : self::CATEGORY_ALL );
 
 		if ( ! $this->are_categories_valid( $categories ) ) {
-			return new \WP_Error( 'attacklog_whitelist_invalid_categories', __( 'Choose at least one valid category.', 'attack-log' ) );
+			return new \WP_Error( 'attacklog_whitelist_invalid_categories', __( 'Choose at least one valid category.', 'attacklog' ) );
 		}
 
 		if ( $this->is_duplicate( $type, $value, $ignore_id ) ) {
-			return new \WP_Error( 'attacklog_whitelist_duplicate', __( 'This entry is already on the whitelist.', 'attack-log' ) );
+			return new \WP_Error( 'attacklog_whitelist_duplicate', __( 'This entry is already on the whitelist.', 'attacklog' ) );
 		}
 
 		return array(
@@ -283,10 +283,10 @@ class Whitelist {
 
 	private function get_invalid_value_message( string $type ): string {
 		if ( self::TYPE_IP === $type ) {
-			return __( 'Enter a valid IPv4 or IPv6 address.', 'attack-log' );
+			return __( 'Enter a valid IPv4 or IPv6 address.', 'attacklog' );
 		}
 
-		return __( 'Enter a User-Agent. A missing User-Agent cannot be whitelisted.', 'attack-log' );
+		return __( 'Enter a User-Agent. A missing User-Agent cannot be whitelisted.', 'attacklog' );
 	}
 
 	private function are_categories_valid( $categories ): bool {
@@ -338,7 +338,7 @@ class Whitelist {
 	}
 
 	private function build_not_found_error(): \WP_Error {
-		return new \WP_Error( 'attacklog_whitelist_not_found', __( 'Whitelist entry not found.', 'attack-log' ) );
+		return new \WP_Error( 'attacklog_whitelist_not_found', __( 'Whitelist entry not found.', 'attacklog' ) );
 	}
 
 	private function generate_id(): string {

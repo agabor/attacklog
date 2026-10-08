@@ -60,7 +60,7 @@ You are responsible for mentioning the logging in your privacy policy. This is n
 
 == Installation ==
 
-1. Install Attack Log from Plugins → Add New, or upload the `attack-log` folder to `/wp-content/plugins/`.
+1. Install Attack Log from Plugins → Add New, or upload the `attacklog` folder to `/wp-content/plugins/`.
 2. Activate the plugin **from your browser**, the way you normally visit your site. On activation Attack Log checks whether your request came through Cloudflare and turns bypass detection on or off accordingly.
 3. Open **Attack Log** in the admin menu. Check the Cloudflare card: if the switch doesn't match your setup, change it.
 4. Optionally, add your uptime monitor, office IP or other trusted tools to the whitelist.

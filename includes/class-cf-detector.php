@@ -124,7 +124,7 @@ class Cf_Detector {
 			$status  = 'full';
 			$message = sprintf(
 				/* translators: 1: Cloudflare Ray ID, 2: two-letter country code. */
-				__( 'This request came through Cloudflare (Ray %1$s, %2$s)', 'attack-log' ),
+				__( 'This request came through Cloudflare (Ray %1$s, %2$s)', 'attacklog' ),
 				$ray_id,
 				$country
 			);
@@ -132,12 +132,12 @@ class Cf_Detector {
 			$status  = 'partial';
 			$message = sprintf(
 				/* translators: %s: comma-separated list of missing header names. */
-				__( 'This request has only some Cloudflare headers (missing: %s)', 'attack-log' ),
+				__( 'This request has only some Cloudflare headers (missing: %s)', 'attacklog' ),
 				implode( ', ', $missing_headers )
 			);
 		} else {
 			$status  = 'none';
-			$message = __( 'This request did not come through Cloudflare', 'attack-log' );
+			$message = __( 'This request did not come through Cloudflare', 'attacklog' );
 		}
 
 		return array(
@@ -155,11 +155,11 @@ class Cf_Detector {
 		$present_header_count     = self::count_present_cf_headers();
 
 		if ( $bypass_detection_enabled && 0 === $present_header_count ) {
-			return __( "You reached the site without Cloudflare. That's expected if you use a VPN, a hosts-file entry or a staging domain. Otherwise Cloudflare proxying (orange cloud) may be switched off — and every visitor would be logged as a bypass.", 'attack-log' );
+			return __( "You reached the site without Cloudflare. That's expected if you use a VPN, a hosts-file entry or a staging domain. Otherwise Cloudflare proxying (orange cloud) may be switched off — and every visitor would be logged as a bypass.", 'attacklog' );
 		}
 
 		if ( ! $bypass_detection_enabled && $request_has_all_headers ) {
-			return __( 'This site seems to be behind Cloudflare. Turn on bypass detection?', 'attack-log' );
+			return __( 'This site seems to be behind Cloudflare. Turn on bypass detection?', 'attacklog' );
 		}
 
 		return null;

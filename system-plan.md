@@ -3,7 +3,7 @@
 | | |
 |---|---|
 | **Plugin name** | Attack Log |
-| **Slug / text domain** | `attack-log` |
+| **Slug / text domain** | `attacklog` |
 | **Table prefix** | `{$wpdb->prefix}attacklog_` |
 | **Minimum requirements** | WordPress 6.0+, PHP 7.4+, MySQL 5.7+ / MariaDB 10.3+ |
 | **Coding standard** | WordPress.org coding standards, met strictly (section 13) |
@@ -696,8 +696,8 @@ The add/edit form: type (IP / User-Agent), value (exact), category checkboxes (*
 ## 10. Code structure
 
 ```
-attack-log/
-├── attack-log.php                 Plugin header, constants, autoloader, bootstrap
+attacklog/
+├── attacklog.php                 Plugin header, constants, autoloader, bootstrap
 ├── uninstall.php                  Drop tables, delete options, clear cron; on multisite,
 │                                  repeat for every site (`get_sites()` + `switch_to_blog()`)
 ├── readme.txt
@@ -734,7 +734,7 @@ attack-log/
 │   ├── css/admin.css
 │   └── js/admin.js
 └── languages/
-    └── attack-log.pot
+    └── attacklog.pot
 ```
 
 Namespace: `AttackLog\`. PSR-4-style autoloader without Composer (keeps the plugin dependency-free).
@@ -791,7 +791,7 @@ The plugin must **strictly** meet the WordPress.org coding standards. A build th
   - every function, class, option, transient, hook, table and AJAX action prefixed (`attacklog_` / `AttackLog\`);
   - input sanitised early, output escaped late, with the correct `esc_*` function for the context;
   - nonces and capability checks on every state-changing action;
-  - all user-facing strings translatable with the `attack-log` text domain;
+  - all user-facing strings translatable with the `attacklog` text domain;
   - scripts and styles enqueued, never printed inline;
   - `$wpdb->prepare()` for every query with variables;
   - GPLv2-or-later licence, no calls to external services, `readme.txt` in WordPress.org format.

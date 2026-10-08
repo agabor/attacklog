@@ -28,7 +28,7 @@ class Log_Controller {
 
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'You are not allowed to do this.', 'attack-log' ) ),
+				array( 'message' => __( 'You are not allowed to do this.', 'attacklog' ) ),
 				403
 			);
 		}
@@ -77,7 +77,7 @@ class Log_Controller {
 
 		if ( 'CLEAR' !== $confirmation ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Confirmation text did not match.', 'attack-log' ) ),
+				array( 'message' => __( 'Confirmation text did not match.', 'attacklog' ) ),
 				400
 			);
 		}
@@ -92,7 +92,7 @@ class Log_Controller {
 
 		if ( ! in_array( $error_type_id, array_values( Schema::get_error_type_ids() ), true ) ) {
 			wp_send_json_error(
-				array( 'message' => __( 'Invalid error type.', 'attack-log' ) ),
+				array( 'message' => __( 'Invalid error type.', 'attacklog' ) ),
 				400
 			);
 		}

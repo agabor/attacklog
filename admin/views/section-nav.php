@@ -4,7 +4,7 @@ defined( 'ABSPATH' ) || exit;
 
 $sections = $view_data['sections'];
 ?>
-<nav class="attacklog-sections" aria-label="<?php esc_attr_e( 'Attack Log sections', 'attack-log' ); ?>">
+<nav class="attacklog-sections" aria-label="<?php esc_attr_e( 'Attack Log sections', 'attacklog' ); ?>">
 	<?php foreach ( $sections as $section ) : ?>
 		<a
 			class="attacklog-section-link<?php echo ! empty( $section['is_active'] ) ? ' is-active' : ''; ?>"

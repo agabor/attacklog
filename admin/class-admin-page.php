@@ -13,7 +13,7 @@ defined( 'ABSPATH' ) || exit;
 
 class Admin_Page {
 
-	const PAGE_SLUG = 'attack-log';
+	const PAGE_SLUG = 'attacklog';
 
 	const NONCE_ACTION = 'attacklog_admin';
 
@@ -48,8 +48,8 @@ class Admin_Page {
 
 	public function register_menu(): void {
 		$page_hook = add_menu_page(
-			__( 'Attack Log', 'attack-log' ),
-			__( 'Attack Log', 'attack-log' ),
+			__( 'Attack Log', 'attacklog' ),
+			__( 'Attack Log', 'attacklog' ),
 			'manage_options',
 			self::PAGE_SLUG,
 			array( $this, 'render_page' ),
@@ -97,21 +97,21 @@ class Admin_Page {
 				'nonce'                  => wp_create_nonce( self::NONCE_ACTION ),
 				'requestHasAllCfHeaders' => Cf_Detector::request_has_all_cf_headers() ? '1' : '0',
 				'strings'                => array(
-					'confirmEnable'                  => __( 'Turn on Cloudflare bypass detection?', 'attack-log' ),
-					'confirmEnableWithoutCloudflare' => __( 'This request did not come through Cloudflare. If the site is not really behind Cloudflare, every front-end request will be logged as a Cloudflare Bypass. Turn detection on anyway?', 'attack-log' ),
-					'confirmDisable'                 => __( 'Requests that reach your server directly will no longer be logged as Cloudflare Bypass. Turn detection off?', 'attack-log' ),
+					'confirmEnable'                  => __( 'Turn on Cloudflare bypass detection?', 'attacklog' ),
+					'confirmEnableWithoutCloudflare' => __( 'This request did not come through Cloudflare. If the site is not really behind Cloudflare, every front-end request will be logged as a Cloudflare Bypass. Turn detection on anyway?', 'attacklog' ),
+					'confirmDisable'                 => __( 'Requests that reach your server directly will no longer be logged as Cloudflare Bypass. Turn detection off?', 'attacklog' ),
 					/* translators: 1: error type name, 2: total number of requests, 3: number of requests that stay because they have other types, 4: number of requests that are deleted. */
-					'confirmClearType'               => __( 'Remove %1$s from %2$s requests? %3$s of them also have other types and stay in those tabs; the other %4$s are deleted. This can\'t be undone.', 'attack-log' ),
-					'clearAllPrompt'                 => __( 'This deletes the entire log, including entries in all other tabs. Type CLEAR to confirm.', 'attack-log' ),
-					'errorGeneric'                   => __( 'Something went wrong. Please try again.', 'attack-log' ),
-					'on'                             => __( 'On', 'attack-log' ),
-					'off'                            => __( 'Off', 'attack-log' ),
-					'confirmDeleteEntry'             => __( 'Remove this entry from the whitelist?', 'attack-log' ),
-					'addEntryTitle'                  => __( 'Add whitelist entry', 'attack-log' ),
-					'editEntryTitle'                 => __( 'Edit whitelist entry', 'attack-log' ),
-					'noCurrentIp'                    => __( 'Your current IP address could not be determined.', 'attack-log' ),
-					'ipPlaceholder'                  => __( '203.0.113.7', 'attack-log' ),
-					'uaPlaceholder'                  => __( 'Mozilla/5.0 (compatible; MyMonitor/1.0)', 'attack-log' ),
+					'confirmClearType'               => __( 'Remove %1$s from %2$s requests? %3$s of them also have other types and stay in those tabs; the other %4$s are deleted. This can\'t be undone.', 'attacklog' ),
+					'clearAllPrompt'                 => __( 'This deletes the entire log, including entries in all other tabs. Type CLEAR to confirm.', 'attacklog' ),
+					'errorGeneric'                   => __( 'Something went wrong. Please try again.', 'attacklog' ),
+					'on'                             => __( 'On', 'attacklog' ),
+					'off'                            => __( 'Off', 'attacklog' ),
+					'confirmDeleteEntry'             => __( 'Remove this entry from the whitelist?', 'attacklog' ),
+					'addEntryTitle'                  => __( 'Add whitelist entry', 'attacklog' ),
+					'editEntryTitle'                 => __( 'Edit whitelist entry', 'attacklog' ),
+					'noCurrentIp'                    => __( 'Your current IP address could not be determined.', 'attacklog' ),
+					'ipPlaceholder'                  => __( '203.0.113.7', 'attacklog' ),
+					'uaPlaceholder'                  => __( 'Mozilla/5.0 (compatible; MyMonitor/1.0)', 'attacklog' ),
 					'whitelistIpTitle'               => $this->get_whitelist_button_title( Whitelist::TYPE_IP, false, false ),
 					'whitelistUaTitle'               => $this->get_whitelist_button_title( Whitelist::TYPE_UA, false, false ),
 					'whitelistUaMissing'             => $this->get_whitelist_button_title( Whitelist::TYPE_UA, false, true ),
@@ -123,7 +123,7 @@ class Admin_Page {
 
 	public function render_page(): void {
 		if ( ! current_user_can( 'manage_options' ) ) {
-			wp_die( esc_html__( 'You do not have permission to access this page.', 'attack-log' ) );
+			wp_die( esc_html__( 'You do not have permission to access this page.', 'attacklog' ) );
 		}
 
 		if ( self::SECTION_WHITELIST === $this->get_current_section() ) {
@@ -155,8 +155,8 @@ class Admin_Page {
 
 	public function get_section_view_models( string $current_section ): array {
 		$section_labels = array(
-			self::SECTION_LOG       => __( 'Log', 'attack-log' ),
-			self::SECTION_WHITELIST => __( 'Whitelist', 'attack-log' ),
+			self::SECTION_LOG       => __( 'Log', 'attacklog' ),
+			self::SECTION_WHITELIST => __( 'Whitelist', 'attacklog' ),
 		);
 
 		$sections = array();
@@ -177,45 +177,45 @@ class Admin_Page {
 		return array(
 			array(
 				'slug'          => 'all',
-				'label'         => __( 'All', 'attack-log' ),
+				'label'         => __( 'All', 'attacklog' ),
 				'error_type_id' => null,
 				'badge_class'   => 'attacklog-badge--all',
-				'empty_message' => __( 'No suspicious requests have been logged yet.', 'attack-log' ),
+				'empty_message' => __( 'No suspicious requests have been logged yet.', 'attacklog' ),
 			),
 			array(
 				'slug'          => 'cloudflare-bypass',
-				'label'         => __( 'Cloudflare Bypass', 'attack-log' ),
+				'label'         => __( 'Cloudflare Bypass', 'attacklog' ),
 				'error_type_id' => Schema::ERROR_TYPE_CF_BYPASS,
 				'badge_class'   => 'attacklog-badge--cloudflare-bypass',
-				'empty_message' => __( 'Requests that reach your server without the headers Cloudflare always adds appear here.', 'attack-log' ),
+				'empty_message' => __( 'Requests that reach your server without the headers Cloudflare always adds appear here.', 'attacklog' ),
 			),
 			array(
 				'slug'          => 'probing',
-				'label'         => __( 'Probing', 'attack-log' ),
+				'label'         => __( 'Probing', 'attacklog' ),
 				'error_type_id' => Schema::ERROR_TYPE_PROBING,
 				'badge_class'   => 'attacklog-badge--probing',
-				'empty_message' => __( 'Requests that end in a 404 and look for files scanners hunt for, such as .env or backup.sql, appear here.', 'attack-log' ),
+				'empty_message' => __( 'Requests that end in a 404 and look for files scanners hunt for, such as .env or backup.sql, appear here.', 'attacklog' ),
 			),
 			array(
 				'slug'          => 'direct-php',
-				'label'         => __( 'Direct PHP Access', 'attack-log' ),
+				'label'         => __( 'Direct PHP Access', 'attacklog' ),
 				'error_type_id' => Schema::ERROR_TYPE_DIRECT_PHP,
 				'badge_class'   => 'attacklog-badge--direct-php',
-				'empty_message' => __( 'Requests for PHP files inside wp-includes or the uploads folder appear here.', 'attack-log' ),
+				'empty_message' => __( 'Requests for PHP files inside wp-includes or the uploads folder appear here.', 'attacklog' ),
 			),
 			array(
 				'slug'          => 'xmlrpc',
-				'label'         => __( 'XML-RPC', 'attack-log' ),
+				'label'         => __( 'XML-RPC', 'attacklog' ),
 				'error_type_id' => Schema::ERROR_TYPE_XMLRPC,
 				'badge_class'   => 'attacklog-badge--xmlrpc',
-				'empty_message' => __( 'Requests to xmlrpc.php appear here.', 'attack-log' ),
+				'empty_message' => __( 'Requests to xmlrpc.php appear here.', 'attacklog' ),
 			),
 			array(
 				'slug'          => 'suspicious-ua',
-				'label'         => __( 'Suspicious User Agent', 'attack-log' ),
+				'label'         => __( 'Suspicious User Agent', 'attacklog' ),
 				'error_type_id' => Schema::ERROR_TYPE_SUSPICIOUS_UA,
 				'badge_class'   => 'attacklog-badge--suspicious-ua',
-				'empty_message' => __( 'Requests with a missing, malformed, HTTP library or scanner User-Agent appear here.', 'attack-log' ),
+				'empty_message' => __( 'Requests with a missing, malformed, HTTP library or scanner User-Agent appear here.', 'attacklog' ),
 			),
 		);
 	}
@@ -320,7 +320,7 @@ class Admin_Page {
 			'total_items'        => $total_items,
 			'total_pages'        => $total_pages,
 			'pagination_base'    => add_query_arg( 'paged', '%#%', $pagination_base_url ),
-			'badge_column_label' => null === $current_error_type_id ? __( 'Types', 'attack-log' ) : __( 'Also flagged', 'attack-log' ),
+			'badge_column_label' => null === $current_error_type_id ? __( 'Types', 'attacklog' ) : __( 'Also flagged', 'attacklog' ),
 			'rows'               => $rows,
 			'category_options'   => $this->build_category_options(),
 			'ua_hint'            => $this->get_ua_hint(),
@@ -350,12 +350,12 @@ class Admin_Page {
 	}
 
 	private function get_ua_hint(): string {
-		return __( 'Library and monitor User-Agents, such as uptime checkers, can be whitelisted for Suspicious User Agent only, so their requests are still logged if they probe for other things.', 'attack-log' );
+		return __( 'Library and monitor User-Agents, such as uptime checkers, can be whitelisted for Suspicious User Agent only, so their requests are still logged if they probe for other things.', 'attacklog' );
 	}
 
 	public function describe_whitelist_categories( $categories ): string {
 		if ( Whitelist::CATEGORY_ALL === $categories ) {
-			return __( 'All', 'attack-log' );
+			return __( 'All', 'attacklog' );
 		}
 
 		$labels = array();
@@ -375,19 +375,19 @@ class Admin_Page {
 		$set_by = isset( $status['set_by'] ) ? $status['set_by'] : null;
 
 		if ( 'activation' === $set_by ) {
-			return __( 'Set automatically at activation', 'attack-log' );
+			return __( 'Set automatically at activation', 'attacklog' );
 		}
 
 		if ( 'first_admin_visit' === $set_by ) {
-			return __( 'Set automatically on first visit', 'attack-log' );
+			return __( 'Set automatically on first visit', 'attacklog' );
 		}
 
 		if ( 'user' !== $set_by ) {
-			return __( 'Not set yet', 'attack-log' );
+			return __( 'Not set yet', 'attacklog' );
 		}
 
 		$user         = ! empty( $status['user_id'] ) ? get_userdata( (int) $status['user_id'] ) : false;
-		$display_name = $user ? $user->display_name : __( 'unknown user', 'attack-log' );
+		$display_name = $user ? $user->display_name : __( 'unknown user', 'attacklog' );
 		$set_date     = ! empty( $status['set_at'] )
 			? mysql2date( get_option( 'date_format' ), get_date_from_gmt( $status['set_at'] ) )
 			: '';
@@ -395,7 +395,7 @@ class Admin_Page {
 		if ( ! empty( $status['enabled'] ) ) {
 			return sprintf(
 				/* translators: 1: user display name, 2: date. */
-				__( 'Turned on by %1$s, %2$s', 'attack-log' ),
+				__( 'Turned on by %1$s, %2$s', 'attacklog' ),
 				$display_name,
 				$set_date
 			);
@@ -403,7 +403,7 @@ class Admin_Page {
 
 		return sprintf(
 			/* translators: 1: user display name, 2: date. */
-			__( 'Turned off by %1$s, %2$s', 'attack-log' ),
+			__( 'Turned off by %1$s, %2$s', 'attacklog' ),
 			$display_name,
 			$set_date
 		);
@@ -417,7 +417,7 @@ class Admin_Page {
 		return array(
 			'id'         => (string) $entry['id'],
 			'type'       => (string) $entry['type'],
-			'type_label' => $is_ip_entry ? __( 'IP', 'attack-log' ) : __( 'UA', 'attack-log' ),
+			'type_label' => $is_ip_entry ? __( 'IP', 'attacklog' ) : __( 'UA', 'attacklog' ),
 			'value'      => (string) $entry['value'],
 			'categories' => $entry['categories'],
 			'applies_to' => $this->describe_whitelist_categories( $entry['categories'] ),
@@ -491,17 +491,17 @@ class Admin_Page {
 	private function get_whitelist_button_title( string $type, bool $exists, bool $is_disabled ): string {
 		if ( $is_disabled ) {
 			return Whitelist::TYPE_UA === $type
-				? __( 'A missing User-Agent cannot be whitelisted.', 'attack-log' )
-				: __( 'No IP address is available for this request.', 'attack-log' );
+				? __( 'A missing User-Agent cannot be whitelisted.', 'attacklog' )
+				: __( 'No IP address is available for this request.', 'attacklog' );
 		}
 
 		if ( $exists ) {
-			return __( 'Already on the whitelist. Click to edit the entry.', 'attack-log' );
+			return __( 'Already on the whitelist. Click to edit the entry.', 'attacklog' );
 		}
 
 		return Whitelist::TYPE_UA === $type
-			? __( 'Add this User-Agent to the whitelist', 'attack-log' )
-			: __( 'Add this IP address to the whitelist', 'attack-log' );
+			? __( 'Add this User-Agent to the whitelist', 'attacklog' )
+			: __( 'Add this IP address to the whitelist', 'attacklog' );
 	}
 
 	private function get_whitelist_ip_for_row( $request_row ): string {
@@ -604,7 +604,7 @@ class Admin_Page {
 				'is_active'       => $current_slug === $tab_definition['slug'],
 				'is_detection_off' => Schema::ERROR_TYPE_CF_BYPASS === $tab_definition['error_type_id'] && ! $bypass_detection_enabled,
 				'tooltip'         => null === $tab_definition['error_type_id']
-					? __( 'Counts each request once, even if it was logged under several types, so it can be lower than the sum of the other tabs.', 'attack-log' )
+					? __( 'Counts each request once, even if it was logged under several types, so it can be lower than the sum of the other tabs.', 'attacklog' )
 					: '',
 			);
 		}
@@ -681,7 +681,7 @@ class Admin_Page {
 		}
 
 		if ( null === $request_row->user_agent || '' === $request_row->user_agent ) {
-			return __( '— missing —', 'attack-log' );
+			return __( '— missing —', 'attacklog' );
 		}
 
 		return (string) $request_row->user_agent;

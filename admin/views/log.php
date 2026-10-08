@@ -30,12 +30,12 @@ $live_note_icons = array(
 $live_note_icon  = isset( $live_note_icons[ $cf_live_note['status'] ] ) ? $live_note_icons[ $cf_live_note['status'] ] : '○';
 
 $whitelist_button_labels = array(
-	'ip' => __( 'IP', 'attack-log' ),
-	'ua' => __( 'UA', 'attack-log' ),
+	'ip' => __( 'IP', 'attacklog' ),
+	'ua' => __( 'UA', 'attacklog' ),
 );
 ?>
 <div class="wrap attacklog-wrap">
-	<h1 class="attacklog-title"><?php esc_html_e( 'Attack Log', 'attack-log' ); ?></h1>
+	<h1 class="attacklog-title"><?php esc_html_e( 'Attack Log', 'attacklog' ); ?></h1>
 
 	<?php require ATTACKLOG_PLUGIN_DIR . 'admin/views/section-nav.php'; ?>
 
@@ -50,7 +50,7 @@ $whitelist_button_labels = array(
 		<?php endif; ?>
 
 		<div class="attacklog-cf-switch">
-			<span class="attacklog-cf-switch__label" id="attacklog-cf-switch-label"><?php esc_html_e( 'Cloudflare bypass detection', 'attack-log' ); ?></span>
+			<span class="attacklog-cf-switch__label" id="attacklog-cf-switch-label"><?php esc_html_e( 'Cloudflare bypass detection', 'attacklog' ); ?></span>
 			<button
 				type="button"
 				class="attacklog-switch<?php echo $detection_enabled ? ' is-on' : ''; ?>"
@@ -61,14 +61,14 @@ $whitelist_button_labels = array(
 				data-enabled="<?php echo $detection_enabled ? '1' : '0'; ?>"
 			>
 				<span class="attacklog-switch__knob"></span>
-				<span class="attacklog-switch__state"><?php echo $detection_enabled ? esc_html__( 'On', 'attack-log' ) : esc_html__( 'Off', 'attack-log' ); ?></span>
+				<span class="attacklog-switch__state"><?php echo $detection_enabled ? esc_html__( 'On', 'attacklog' ) : esc_html__( 'Off', 'attacklog' ); ?></span>
 			</button>
 		</div>
 
 		<p class="attacklog-cf-footer" id="attacklog-cf-set-by"><?php echo esc_html( $cf_set_by_text ); ?></p>
 	</div>
 
-	<nav class="attacklog-tabs" aria-label="<?php esc_attr_e( 'Error types', 'attack-log' ); ?>">
+	<nav class="attacklog-tabs" aria-label="<?php esc_attr_e( 'Error types', 'attacklog' ); ?>">
 		<?php foreach ( $tabs as $tab ) : ?>
 			<?php
 			$tab_classes = 'attacklog-tab';
@@ -89,7 +89,7 @@ $whitelist_button_labels = array(
 				<span class="attacklog-tab__label"><?php echo esc_html( $tab['label'] ); ?></span>
 				<span class="attacklog-tab__count"<?php echo '' !== $tab['tooltip'] ? ' title="' . esc_attr( $tab['tooltip'] ) . '"' : ''; ?>><?php echo esc_html( number_format_i18n( (int) $tab['count'] ) ); ?></span>
 				<?php if ( ! empty( $tab['is_detection_off'] ) ) : ?>
-					<span class="attacklog-tab__note"><?php esc_html_e( 'detection off', 'attack-log' ); ?></span>
+					<span class="attacklog-tab__note"><?php esc_html_e( 'detection off', 'attacklog' ); ?></span>
 				<?php endif; ?>
 			</a>
 		<?php endforeach; ?>
@@ -105,21 +105,21 @@ $whitelist_button_labels = array(
 						<tr>
 							<th scope="col">
 								<a class="attacklog-sort" href="<?php echo esc_url( $sort['time_url'] ); ?>">
-									<?php esc_html_e( 'Time', 'attack-log' ); ?>
+									<?php esc_html_e( 'Time', 'attacklog' ); ?>
 									<span class="attacklog-sort__indicator" aria-hidden="true"><?php echo esc_html( $sort['time_indicator'] ); ?></span>
 								</a>
 							</th>
-							<th scope="col"><?php esc_html_e( 'Method', 'attack-log' ); ?></th>
-							<th scope="col"><?php esc_html_e( 'Path', 'attack-log' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Method', 'attacklog' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Path', 'attacklog' ); ?></th>
 							<th scope="col">
 								<a class="attacklog-sort" href="<?php echo esc_url( $sort['code_url'] ); ?>">
-									<?php esc_html_e( 'Code', 'attack-log' ); ?>
+									<?php esc_html_e( 'Code', 'attacklog' ); ?>
 									<span class="attacklog-sort__indicator" aria-hidden="true"><?php echo esc_html( $sort['code_indicator'] ); ?></span>
 								</a>
 							</th>
-							<th scope="col"><?php esc_html_e( 'IP', 'attack-log' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'IP', 'attacklog' ); ?></th>
 							<th scope="col"><?php echo esc_html( $badge_column_label ); ?></th>
-							<th scope="col"><?php esc_html_e( 'Whitelist', 'attack-log' ); ?></th>
+							<th scope="col"><?php esc_html_e( 'Whitelist', 'attacklog' ); ?></th>
 						</tr>
 					</thead>
 					<tbody>
@@ -135,7 +135,7 @@ $whitelist_button_labels = array(
 								<td class="attacklog-cell attacklog-cell--ip">
 									<span class="attacklog-mono"><?php echo '' !== $row['client_ip'] ? esc_html( $row['client_ip'] ) : '—'; ?></span>
 									<?php if ( ! empty( $row['addresses_differ'] ) ) : ?>
-										<span class="attacklog-remote-addr attacklog-mono is-different" title="<?php esc_attr_e( 'Actual connecting address differs from the client IP', 'attack-log' ); ?>"><?php echo esc_html( $row['remote_addr'] ); ?></span>
+										<span class="attacklog-remote-addr attacklog-mono is-different" title="<?php esc_attr_e( 'Actual connecting address differs from the client IP', 'attacklog' ); ?>"><?php echo esc_html( $row['remote_addr'] ); ?></span>
 									<?php endif; ?>
 								</td>
 								<td class="attacklog-cell attacklog-cell--types">
@@ -190,7 +190,7 @@ $whitelist_button_labels = array(
 				echo esc_html(
 					sprintf(
 						/* translators: %s: number of logged requests. */
-						_n( '%s request', '%s requests', $total_items, 'attack-log' ),
+						_n( '%s request', '%s requests', $total_items, 'attacklog' ),
 						number_format_i18n( $total_items )
 					)
 				);
@@ -209,14 +209,14 @@ $whitelist_button_labels = array(
 						echo esc_html(
 							sprintf(
 								/* translators: %s: error type name. */
-								__( 'Clear %s', 'attack-log' ),
+								__( 'Clear %s', 'attacklog' ),
 								$current_tab['label']
 							)
 						);
 						?>
 					</button>
 				<?php endif; ?>
-				<button type="button" class="button button-link-delete attacklog-clear-all"><?php esc_html_e( 'Clear all', 'attack-log' ); ?></button>
+				<button type="button" class="button button-link-delete attacklog-clear-all"><?php esc_html_e( 'Clear all', 'attacklog' ); ?></button>
 			</div>
 
 			<p class="attacklog-footer__autoclean">
@@ -228,7 +228,7 @@ $whitelist_button_labels = array(
 							'Auto-clean: entries older than %s day are removed daily.',
 							'Auto-clean: entries older than %s days are removed daily.',
 							$keep_days,
-							'attack-log'
+							'attacklog'
 						),
 						number_format_i18n( $keep_days )
 					)
