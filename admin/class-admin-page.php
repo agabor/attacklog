@@ -112,10 +112,6 @@ class Admin_Page {
 					'noCurrentIp'                    => __( 'Your current IP address could not be determined.', 'attacklog' ),
 					'ipPlaceholder'                  => __( '203.0.113.7', 'attacklog' ),
 					'uaPlaceholder'                  => __( 'Mozilla/5.0 (compatible; MyMonitor/1.0)', 'attacklog' ),
-					'whitelistIpTitle'               => $this->get_whitelist_button_title( Whitelist::TYPE_IP, false, false ),
-					'whitelistUaTitle'               => $this->get_whitelist_button_title( Whitelist::TYPE_UA, false, false ),
-					'whitelistUaMissing'             => $this->get_whitelist_button_title( Whitelist::TYPE_UA, false, true ),
-					'whitelistExists'                => $this->get_whitelist_button_title( Whitelist::TYPE_IP, true, false ),
 				),
 			)
 		);
@@ -316,7 +312,6 @@ class Admin_Page {
 			'current_tab'        => $current_tab,
 			'sort'               => $this->build_sort_view_model( $current_slug, $sort ),
 			'page'               => $current_page,
-			'per_page'           => self::PER_PAGE,
 			'total_items'        => $total_items,
 			'total_pages'        => $total_pages,
 			'pagination_base'    => add_query_arg( 'paged', '%#%', $pagination_base_url ),
@@ -415,11 +410,9 @@ class Admin_Page {
 		$created_date = ! empty( $entry['created_at'] ) ? get_date_from_gmt( $entry['created_at'], 'Y-m-d H:i:s' ) : '';
 
 		return array(
-			'id'         => (string) $entry['id'],
 			'type'       => (string) $entry['type'],
 			'type_label' => $is_ip_entry ? __( 'IP', 'attacklog' ) : __( 'UA', 'attacklog' ),
 			'value'      => (string) $entry['value'],
-			'categories' => $entry['categories'],
 			'applies_to' => $this->describe_whitelist_categories( $entry['categories'] ),
 			'note'       => (string) $entry['note'],
 			'created_at' => $created_date,
@@ -473,7 +466,6 @@ class Admin_Page {
 		$existing_entry = ! $is_disabled && isset( $whitelist_lookup[ $lookup_key ] ) ? $whitelist_lookup[ $lookup_key ] : null;
 
 		return array(
-			'value'         => $value,
 			'disabled'      => $is_disabled,
 			'exists'        => null !== $existing_entry,
 			'title'         => $this->get_whitelist_button_title( $type, null !== $existing_entry, $is_disabled ),
@@ -630,7 +622,6 @@ class Admin_Page {
 		$status_code = (int) $request_row->return_code;
 
 		return array(
-			'id'               => (int) $request_row->id,
 			'time'             => get_date_from_gmt( $request_row->created_at, 'Y-m-d H:i:s' ),
 			'method'           => (string) $request_row->http_method,
 			'path'             => (string) $request_row->request_path,

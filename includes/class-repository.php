@@ -59,35 +59,6 @@ class Repository {
 		return (int) $wpdb->insert_id;
 	}
 
-	public function get_error_type_id( $error_type_name ) {
-		$error_type_map = $this->get_error_type_map();
-
-		return isset( $error_type_map[ $error_type_name ] ) ? $error_type_map[ $error_type_name ] : null;
-	}
-
-	private function get_error_type_map() {
-		global $wpdb;
-
-		$cached_map = wp_cache_get( 'error_type_map', 'attacklog' );
-
-		if ( false !== $cached_map ) {
-			return $cached_map;
-		}
-
-		$table = Schema::get_table_name( 'error_types' );
-		$rows  = $wpdb->get_results( "SELECT id, name FROM {$table}" );
-
-		$error_type_map = array();
-
-		foreach ( $rows as $row ) {
-			$error_type_map[ $row->name ] = (int) $row->id;
-		}
-
-		wp_cache_set( 'error_type_map', $error_type_map, 'attacklog' );
-
-		return $error_type_map;
-	}
-
 	public function insert_request( array $request_data ) {
 		global $wpdb;
 

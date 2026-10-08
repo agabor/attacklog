@@ -18,11 +18,7 @@
 		editEntryTitle: 'Edit whitelist entry',
 		noCurrentIp: 'Your current IP address could not be determined.',
 		ipPlaceholder: '203.0.113.7',
-		uaPlaceholder: 'Mozilla/5.0 (compatible; MyMonitor/1.0)',
-		whitelistIpTitle: 'Add this IP address to the whitelist',
-		whitelistUaTitle: 'Add this User-Agent to the whitelist',
-		whitelistUaMissing: 'A missing User-Agent cannot be whitelisted.',
-		whitelistExists: 'Already on the whitelist. Click to edit the entry.'
+		uaPlaceholder: 'Mozilla/5.0 (compatible; MyMonitor/1.0)'
 	};
 
 	function getString( key ) {

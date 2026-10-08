@@ -18,10 +18,6 @@ class Schema {
 
 	const ERROR_TYPE_SUSPICIOUS_UA = 5;
 
-	const ERROR_TYPES_CACHE_KEY = 'error_types';
-
-	const CACHE_GROUP = 'attacklog';
-
 	public static function get_table_name( $suffix ) {
 		global $wpdb;
 
@@ -123,8 +119,6 @@ class Schema {
 		foreach ( self::get_error_type_ids() as $name => $id ) {
 			self::store_error_type( $id, $name );
 		}
-
-		wp_cache_delete( self::ERROR_TYPES_CACHE_KEY, self::CACHE_GROUP );
 	}
 
 	private static function store_error_type( $id, $name ) {

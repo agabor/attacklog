@@ -8,8 +8,6 @@ class Request_Context {
 
 	private $method;
 
-	private $raw_path;
-
 	private $normalized_path;
 
 	private $client_ip;
@@ -41,11 +39,11 @@ class Request_Context {
 			? strtoupper( sanitize_text_field( wp_unslash( $_SERVER['REQUEST_METHOD'] ) ) )
 			: '';
 
-		$request_context->raw_path = isset( $_SERVER['REQUEST_URI'] )
+		$raw_path = isset( $_SERVER['REQUEST_URI'] )
 			? wp_unslash( $_SERVER['REQUEST_URI'] )
 			: '';
 
-		$request_context->normalized_path = self::normalize_path( $request_context->raw_path );
+		$request_context->normalized_path = self::normalize_path( $raw_path );
 
 		$request_context->client_ip   = $ip_resolver->resolve_client_ip();
 		$request_context->remote_addr = $ip_resolver->resolve_remote_addr();
@@ -76,10 +74,6 @@ class Request_Context {
 
 	public function get_method() {
 		return $this->method;
-	}
-
-	public function get_raw_path() {
-		return $this->raw_path;
 	}
 
 	public function get_normalized_path() {

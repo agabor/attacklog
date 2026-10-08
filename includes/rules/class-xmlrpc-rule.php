@@ -80,11 +80,4 @@ class Xmlrpc_Rule {
 
 		return implode( " \u{00b7} ", $detail_parts );
 	}
-
-	public function reset() {
-		self::$method_name          = null;
-		self::$inner_call_count     = 0;
-		self::$failed_login_count   = 0;
-		self::$listeners_registered = false;
-	}
 }

@@ -141,11 +141,8 @@ class Cf_Detector {
 		}
 
 		return array(
-			'status'          => $status,
-			'message'         => $message,
-			'ray_id'          => $ray_id,
-			'country'         => $country,
-			'missing_headers' => $missing_headers,
+			'status'  => $status,
+			'message' => $message,
 		);
 	}
 

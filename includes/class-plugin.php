@@ -19,13 +19,9 @@ class Plugin {
 
 	private $request_context;
 
-	private $classifier;
-
 	private $repository;
 
 	private $logger;
-
-	private $xmlrpc_rule;
 
 	private function __construct() {}
 
@@ -45,23 +41,22 @@ class Plugin {
 		$direct_php_rule    = new Direct_Php_Rule();
 		$suspicious_ua_rule = new Suspicious_Ua_Rule();
 		$whitelist          = new Whitelist();
+		$xmlrpc_rule        = new Xmlrpc_Rule();
 
-		$this->xmlrpc_rule = new Xmlrpc_Rule();
-
-		$this->classifier = new Classifier(
+		$classifier = new Classifier(
 			$cf_bypass_rule,
 			$probe_rule,
 			$direct_php_rule,
-			$this->xmlrpc_rule,
+			$xmlrpc_rule,
 			$suspicious_ua_rule,
 			$whitelist
 		);
 
 		$this->repository = new Repository();
-		$this->logger      = new Logger( $this->classifier, $this->repository );
+		$this->logger      = new Logger( $classifier, $this->repository );
 
 		if ( $this->request_context->is_xmlrpc_request() ) {
-			$this->xmlrpc_rule->register_listeners();
+			$xmlrpc_rule->register_listeners();
 		}
 
 		$this->register_runtime_hooks();
@@ -102,9 +97,5 @@ class Plugin {
 		}
 
 		$this->logger->handle( $this->request_context );
-	}
-
-	public function get_request_context() {
-		return $this->request_context;
 	}
 }

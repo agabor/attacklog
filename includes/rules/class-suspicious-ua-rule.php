@@ -8,8 +8,6 @@ defined( 'ABSPATH' ) || exit;
 
 class Suspicious_Ua_Rule {
 
-	private static $placeholder_values = array( '-', 'null', 'undefined', 'test' );
-
 	public function get_pattern_groups() {
 		$default_groups = array(
 			'http-library' => array(
@@ -84,7 +82,7 @@ class Suspicious_Ua_Rule {
 	public function get_matched_label_and_token( Request_Context $context ) {
 		$user_agent = $context->get_user_agent();
 
-		if ( null === $user_agent || '' === $user_agent ) {
+		if ( null === $user_agent ) {
 			return array( 'missing', '' );
 		}
 
@@ -109,14 +107,6 @@ class Suspicious_Ua_Rule {
 		}
 
 		if ( preg_match( '/^Mozilla\/5\.0$/i', $user_agent ) ) {
-			return true;
-		}
-
-		if ( preg_match( '/[\x00-\x1F\x7F]/', $user_agent ) ) {
-			return true;
-		}
-
-		if ( in_array( strtolower( $user_agent ), self::$placeholder_values, true ) ) {
 			return true;
 		}
 

@@ -49,16 +49,6 @@ class Whitelist {
 		return $entries;
 	}
 
-	public function get_entry( string $id ): ?array {
-		foreach ( $this->get_entries() as $entry ) {
-			if ( $id === $entry['id'] ) {
-				return $entry;
-			}
-		}
-
-		return null;
-	}
-
 	public function add_entry( array $input, int $user_id ) {
 		$sanitized_input = $this->sanitize_input( $input );
 
