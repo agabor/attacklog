@@ -317,12 +317,6 @@
 	max-width: 420px;
 }
 
-.attacklog-wrap .attacklog-cell--types {
-	display: flex;
-	flex-wrap: wrap;
-	gap: var(--attacklog-space-1);
-}
-
 .attacklog-wrap .attacklog-mono {
 	font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 	font-size: 12px;
@@ -481,7 +475,6 @@
 	gap: var(--attacklog-space-3);
 	margin-top: var(--attacklog-space-4);
 	padding-top: var(--attacklog-space-4);
-	border-top: 1px solid var(--attacklog-border);
 }
 
 .attacklog-wrap .attacklog-footer p {

@@ -15,32 +15,12 @@
 
 defined( 'ABSPATH' ) || exit;
 
-/**
- * Current plugin version.
- *
- * @var string
- */
 define( 'ATTACKLOG_VERSION', '1.0.0' );
 
-/**
- * Absolute path to the main plugin file.
- *
- * @var string
- */
 define( 'ATTACKLOG_PLUGIN_FILE', __FILE__ );
 
-/**
- * Absolute path to the plugin directory, with trailing slash.
- *
- * @var string
- */
 define( 'ATTACKLOG_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 
-/**
- * URL to the plugin directory, with trailing slash.
- *
- * @var string
- */
 define( 'ATTACKLOG_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 
 function attacklog_autoload( $class_name ) {
