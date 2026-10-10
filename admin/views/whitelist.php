@@ -1,14 +1,13 @@
 <?php
 
-defined( 'ABSPATH' ) || exit;
+use AttackLog\Admin\View;
 
-$entries    = $view_data['entries'];
-$current_ip = $view_data['current_ip'];
+defined( 'ABSPATH' ) || exit;
 ?>
 <div class="wrap attacklog-wrap">
 	<h1 class="attacklog-title"><?php esc_html_e( 'Attack Log', 'attacklog' ); ?></h1>
 
-	<?php require ATTACKLOG_PLUGIN_DIR . 'admin/views/section-nav.php'; ?>
+	<?php View::render( 'section-nav', array( 'sections' => $sections ) ); ?>
 
 	<div class="attacklog-wl-toolbar">
 		<button type="button" class="button button-primary" id="attacklog-wl-add"><?php esc_html_e( 'Add entry', 'attacklog' ); ?></button>
@@ -22,9 +21,14 @@ $current_ip = $view_data['current_ip'];
 	</div>
 
 	<?php
-	$whitelist_form_is_modal = false;
-
-	require ATTACKLOG_PLUGIN_DIR . 'admin/views/whitelist-form.php';
+	View::render(
+		'whitelist-form',
+		array(
+			'category_options' => $category_options,
+			'ua_hint'          => $ua_hint,
+			'is_modal'         => false,
+		)
+	);
 	?>
 
 	<div class="attacklog-card attacklog-wl-card">

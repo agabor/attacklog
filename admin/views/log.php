@@ -2,16 +2,9 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$tabs               = $view_data['tabs'];
-$current_tab        = $view_data['current_tab'];
-$sort               = $view_data['sort'];
-$current_page       = (int) $view_data['page'];
-$total_pages        = (int) $view_data['total_pages'];
-$total_items        = (int) $view_data['total_items'];
-$pagination_base    = $view_data['pagination_base'];
-$badge_column_label = $view_data['badge_column_label'];
-$rows               = $view_data['rows'];
-$cloudflare         = $view_data['cloudflare'];
+$current_page = (int) $page;
+$total_pages  = (int) $total_pages;
+$total_items  = (int) $total_items;
 
 $cf_live_note      = $cloudflare['live_note'];
 $cf_hint           = $cloudflare['hint'];
@@ -36,7 +29,7 @@ $whitelist_button_labels = array(
 <div class="wrap attacklog-wrap">
 	<h1 class="attacklog-title"><?php esc_html_e( 'Attack Log', 'attacklog' ); ?></h1>
 
-	<?php require ATTACKLOG_PLUGIN_DIR . 'admin/views/section-nav.php'; ?>
+	<?php \AttackLog\Admin\View::render( 'section-nav', array( 'sections' => $sections ) ); ?>
 
 	<div class="attacklog-card attacklog-cf-card">
 		<p class="attacklog-cf-note attacklog-cf-note--<?php echo esc_attr( $cf_live_note['status'] ); ?>">
@@ -238,8 +231,13 @@ $whitelist_button_labels = array(
 	</div>
 
 	<?php
-	$whitelist_form_is_modal = true;
-
-	require ATTACKLOG_PLUGIN_DIR . 'admin/views/whitelist-form.php';
+	\AttackLog\Admin\View::render(
+		'whitelist-form',
+		array(
+			'category_options' => $category_options,
+			'ua_hint'          => $ua_hint,
+			'is_modal'         => true,
+		)
+	);
 	?>
 </div>

@@ -1,8 +1,11 @@
 <?php
+/**
+ * Section navigation partial.
+ *
+ * Expected input: $sections, a list of arrays with the keys label, url and is_active.
+ */
 
 defined( 'ABSPATH' ) || exit;
-
-$sections = $view_data['sections'];
 ?>
 <nav class="attacklog-sections" aria-label="<?php esc_attr_e( 'Attack Log sections', 'attacklog' ); ?>">
 	<?php foreach ( $sections as $section ) : ?>

@@ -2,9 +2,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$category_options = $view_data['category_options'];
-$ua_hint          = $view_data['ua_hint'];
-$is_modal         = ! empty( $whitelist_form_is_modal );
+$is_modal = ! empty( $is_modal );
 ?>
 <?php if ( $is_modal ) : ?>
 <div class="attacklog-wl-modal" id="attacklog-wl-modal" role="dialog" aria-modal="true" aria-labelledby="attacklog-wl-title" hidden>

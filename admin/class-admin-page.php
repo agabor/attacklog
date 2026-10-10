@@ -123,16 +123,12 @@ class Admin_Page {
 		}
 
 		if ( self::SECTION_WHITELIST === $this->get_current_section() ) {
-			$view_data = $this->get_whitelist_view_data();
-
-			require ATTACKLOG_PLUGIN_DIR . 'admin/views/whitelist.php';
+			View::render( 'whitelist', $this->get_whitelist_view_data() );
 
 			return;
 		}
 
-		$view_data = $this->get_log_view_data();
-
-		require ATTACKLOG_PLUGIN_DIR . 'admin/views/log.php';
+		View::render( 'log', $this->get_log_view_data() );
 	}
 
 	public function get_current_section(): string {
