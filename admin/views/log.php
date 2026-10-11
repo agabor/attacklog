@@ -1,30 +1,6 @@
 <?php
 
 defined( 'ABSPATH' ) || exit;
-
-$current_page = (int) $page;
-$total_pages  = (int) $total_pages;
-$total_items  = (int) $total_items;
-
-$cf_live_note      = $cloudflare['live_note'];
-$cf_hint           = $cloudflare['hint'];
-$cf_set_by_text    = $cloudflare['description'];
-$detection_enabled = ! empty( $cloudflare['enabled'] );
-$is_all_tab        = null === $current_tab['error_type_id'];
-
-$keep_days = \AttackLog\Cron::KEEP_DAYS;
-
-$live_note_icons = array(
-	'full'    => '✓',
-	'partial' => '⚠',
-	'none'    => '○',
-);
-$live_note_icon  = isset( $live_note_icons[ $cf_live_note['status'] ] ) ? $live_note_icons[ $cf_live_note['status'] ] : '○';
-
-$whitelist_button_labels = array(
-	'ip' => __( 'IP', 'attacklog' ),
-	'ua' => __( 'UA', 'attacklog' ),
-);
 ?>
 <div class="wrap attacklog-wrap">
 	<h1 class="attacklog-title"><?php esc_html_e( 'Attack Log', 'attacklog' ); ?></h1>
@@ -32,49 +8,38 @@ $whitelist_button_labels = array(
 	<?php \AttackLog\Admin\View::render( 'section-nav', array( 'sections' => $sections ) ); ?>
 
 	<div class="attacklog-card attacklog-cf-card">
-		<p class="attacklog-cf-note attacklog-cf-note--<?php echo esc_attr( $cf_live_note['status'] ); ?>">
-			<span class="attacklog-cf-note__icon" aria-hidden="true"><?php echo esc_html( $live_note_icon ); ?></span>
-			<span class="attacklog-cf-note__text"><?php echo esc_html( $cf_live_note['message'] ); ?></span>
+		<p class="attacklog-cf-note attacklog-cf-note--<?php echo esc_attr( $cloudflare['live_note']['status'] ); ?>">
+			<span class="attacklog-cf-note__icon" aria-hidden="true"><?php echo esc_html( $cloudflare['live_note_icon'] ); ?></span>
+			<span class="attacklog-cf-note__text"><?php echo esc_html( $cloudflare['live_note']['message'] ); ?></span>
 		</p>
 
-		<?php if ( ! empty( $cf_hint ) ) : ?>
-			<p class="attacklog-cf-hint"><?php echo esc_html( $cf_hint ); ?></p>
+		<?php if ( ! empty( $cloudflare['hint'] ) ) : ?>
+			<p class="attacklog-cf-hint"><?php echo esc_html( $cloudflare['hint'] ); ?></p>
 		<?php endif; ?>
 
 		<div class="attacklog-cf-switch">
 			<span class="attacklog-cf-switch__label" id="attacklog-cf-switch-label"><?php esc_html_e( 'Cloudflare bypass detection', 'attacklog' ); ?></span>
 			<button
 				type="button"
-				class="attacklog-switch<?php echo $detection_enabled ? ' is-on' : ''; ?>"
+				class="attacklog-switch<?php echo ! empty( $cloudflare['enabled'] ) ? ' is-on' : ''; ?>"
 				id="attacklog-cf-switch"
 				role="switch"
-				aria-checked="<?php echo $detection_enabled ? 'true' : 'false'; ?>"
+				aria-checked="<?php echo ! empty( $cloudflare['enabled'] ) ? 'true' : 'false'; ?>"
 				aria-labelledby="attacklog-cf-switch-label"
-				data-enabled="<?php echo $detection_enabled ? '1' : '0'; ?>"
+				data-enabled="<?php echo ! empty( $cloudflare['enabled'] ) ? '1' : '0'; ?>"
 			>
 				<span class="attacklog-switch__knob"></span>
-				<span class="attacklog-switch__state"><?php echo $detection_enabled ? esc_html__( 'On', 'attacklog' ) : esc_html__( 'Off', 'attacklog' ); ?></span>
+				<span class="attacklog-switch__state"><?php echo ! empty( $cloudflare['enabled'] ) ? esc_html__( 'On', 'attacklog' ) : esc_html__( 'Off', 'attacklog' ); ?></span>
 			</button>
 		</div>
 
-		<p class="attacklog-cf-footer" id="attacklog-cf-set-by"><?php echo esc_html( $cf_set_by_text ); ?></p>
+		<p class="attacklog-cf-footer" id="attacklog-cf-set-by"><?php echo esc_html( $cloudflare['description'] ); ?></p>
 	</div>
 
 	<nav class="attacklog-tabs" aria-label="<?php esc_attr_e( 'Error types', 'attacklog' ); ?>">
 		<?php foreach ( $tabs as $tab ) : ?>
-			<?php
-			$tab_classes = 'attacklog-tab';
-
-			if ( ! empty( $tab['is_active'] ) ) {
-				$tab_classes .= ' is-active';
-			}
-
-			if ( ! empty( $tab['is_detection_off'] ) ) {
-				$tab_classes .= ' is-muted';
-			}
-			?>
 			<a
-				class="<?php echo esc_attr( $tab_classes ); ?>"
+				class="<?php echo esc_attr( $tab['css_classes'] ); ?>"
 				href="<?php echo esc_url( $tab['url'] ); ?>"
 				<?php echo ! empty( $tab['is_active'] ) ? 'aria-current="page"' : ''; ?>
 			>
@@ -136,8 +101,7 @@ $whitelist_button_labels = array(
 									<?php endforeach; ?>
 								</td>
 								<td class="attacklog-cell attacklog-cell--whitelist">
-									<?php foreach ( $whitelist_button_labels as $button_kind => $button_label ) : ?>
-										<?php $whitelist_button = $row['whitelist'][ $button_kind ]; ?>
+									<?php foreach ( $row['whitelist'] as $button_kind => $whitelist_button ) : ?>
 										<button
 											type="button"
 											class="button button-small attacklog-wl-row-button<?php echo ! empty( $whitelist_button['exists'] ) ? ' is-existing' : ''; ?>"
@@ -146,7 +110,7 @@ $whitelist_button_labels = array(
 											data-existing="<?php echo esc_attr( $whitelist_button['existing_json'] ); ?>"
 											title="<?php echo esc_attr( $whitelist_button['title'] ); ?>"
 											<?php disabled( ! empty( $whitelist_button['disabled'] ) ); ?>
-										><?php echo esc_html( ( ! empty( $whitelist_button['exists'] ) ? '✓ ' : '+ ' ) . $button_label ); ?></button>
+										><?php echo esc_html( ( ! empty( $whitelist_button['exists'] ) ? '✓ ' : '+ ' ) . $whitelist_button['label'] ); ?></button>
 									<?php endforeach; ?>
 								</td>
 							</tr>
@@ -164,7 +128,7 @@ $whitelist_button_labels = array(
 						array(
 							'base'      => $pagination_base,
 							'format'    => '',
-							'current'   => $current_page,
+							'current'   => $page,
 							'total'     => $total_pages,
 							'prev_text' => '‹',
 							'next_text' => '›',

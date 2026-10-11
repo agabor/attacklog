@@ -3,6 +3,7 @@
 namespace AttackLog\Admin;
 
 use AttackLog\Cf_Detector;
+use AttackLog\Cron;
 use AttackLog\Ip_Resolver;
 use AttackLog\Repository;
 use AttackLog\Request_Context;
@@ -284,6 +285,7 @@ class Admin_Page {
 		$tabs                    = $this->build_tab_view_models( $current_slug, $bypass_detection_enabled );
 		$tabs_by_error_type_id   = $this->index_tabs_by_error_type_id( $tabs );
 		$cloudflare_status       = Cf_Detector::get_status();
+		$cloudflare_live_note    = Cf_Detector::get_live_note();
 		$whitelist_lookup        = $this->build_whitelist_lookup();
 
 		$rows = array();
@@ -306,6 +308,8 @@ class Admin_Page {
 			'sections'           => $this->get_section_view_models( self::SECTION_LOG ),
 			'tabs'               => $tabs,
 			'current_tab'        => $current_tab,
+			'is_all_tab'         => null === $current_error_type_id,
+			'keep_days'          => Cron::KEEP_DAYS,
 			'sort'               => $this->build_sort_view_model( $current_slug, $sort ),
 			'page'               => $current_page,
 			'total_items'        => $total_items,
@@ -316,10 +320,11 @@ class Admin_Page {
 			'category_options'   => $this->build_category_options(),
 			'ua_hint'            => $this->get_ua_hint(),
 			'cloudflare'         => array(
-				'enabled'     => $bypass_detection_enabled,
-				'live_note'   => Cf_Detector::get_live_note(),
-				'hint'        => Cf_Detector::get_switch_hint(),
-				'description' => $this->describe_cf_set_by( $cloudflare_status ),
+				'enabled'        => $bypass_detection_enabled,
+				'live_note'      => $cloudflare_live_note,
+				'live_note_icon' => $this->get_live_note_icon( $cloudflare_live_note ),
+				'hint'           => Cf_Detector::get_switch_hint(),
+				'description'    => $this->describe_cf_set_by( $cloudflare_status ),
 			),
 		);
 	}
@@ -338,6 +343,16 @@ class Admin_Page {
 			'current_ip'       => $this->whitelist->resolve_ip_for_matching( Request_Context::capture() ),
 			'ua_hint'          => $this->get_ua_hint(),
 		);
+	}
+
+	private function get_live_note_icon( array $live_note ): string {
+		$live_note_icons = array(
+			'full'    => '✓',
+			'partial' => '⚠',
+			'none'    => '○',
+		);
+
+		return isset( $live_note_icons[ $live_note['status'] ] ) ? $live_note_icons[ $live_note['status'] ] : '○';
 	}
 
 	private function get_ua_hint(): string {
@@ -462,6 +477,7 @@ class Admin_Page {
 		$existing_entry = ! $is_disabled && isset( $whitelist_lookup[ $lookup_key ] ) ? $whitelist_lookup[ $lookup_key ] : null;
 
 		return array(
+			'label'         => Whitelist::TYPE_UA === $type ? __( 'UA', 'attacklog' ) : __( 'IP', 'attacklog' ),
 			'disabled'      => $is_disabled,
 			'exists'        => null !== $existing_entry,
 			'title'         => $this->get_whitelist_button_title( $type, null !== $existing_entry, $is_disabled ),
@@ -579,25 +595,42 @@ class Admin_Page {
 		$tabs       = array();
 
 		foreach ( $this->get_tab_definitions() as $tab_definition ) {
-			$count_key = null === $tab_definition['error_type_id'] ? 'all' : $tab_definition['error_type_id'];
+			$count_key        = null === $tab_definition['error_type_id'] ? 'all' : $tab_definition['error_type_id'];
+			$is_active        = $current_slug === $tab_definition['slug'];
+			$is_detection_off = Schema::ERROR_TYPE_CF_BYPASS === $tab_definition['error_type_id'] && ! $bypass_detection_enabled;
 
 			$tabs[] = array(
-				'slug'            => $tab_definition['slug'],
-				'label'           => $tab_definition['label'],
-				'error_type_id'   => $tab_definition['error_type_id'],
-				'badge_class'     => $tab_definition['badge_class'],
-				'empty_message'   => $tab_definition['empty_message'],
-				'count'           => isset( $tab_counts[ $count_key ] ) ? (int) $tab_counts[ $count_key ] : 0,
-				'url'             => $this->build_tab_url( $tab_definition['slug'] ),
-				'is_active'       => $current_slug === $tab_definition['slug'],
-				'is_detection_off' => Schema::ERROR_TYPE_CF_BYPASS === $tab_definition['error_type_id'] && ! $bypass_detection_enabled,
-				'tooltip'         => null === $tab_definition['error_type_id']
+				'slug'             => $tab_definition['slug'],
+				'label'            => $tab_definition['label'],
+				'error_type_id'    => $tab_definition['error_type_id'],
+				'badge_class'      => $tab_definition['badge_class'],
+				'empty_message'    => $tab_definition['empty_message'],
+				'count'            => isset( $tab_counts[ $count_key ] ) ? (int) $tab_counts[ $count_key ] : 0,
+				'url'              => $this->build_tab_url( $tab_definition['slug'] ),
+				'is_active'        => $is_active,
+				'is_detection_off' => $is_detection_off,
+				'css_classes'      => $this->build_tab_css_classes( $is_active, $is_detection_off ),
+				'tooltip'          => null === $tab_definition['error_type_id']
 					? __( 'Counts each request once, even if it was logged under several types, so it can be lower than the sum of the other tabs.', 'attacklog' )
 					: '',
 			);
 		}
 
 		return $tabs;
+	}
+
+	private function build_tab_css_classes( bool $is_active, bool $is_detection_off ): string {
+		$css_classes = array( 'attacklog-tab' );
+
+		if ( $is_active ) {
+			$css_classes[] = 'is-active';
+		}
+
+		if ( $is_detection_off ) {
+			$css_classes[] = 'is-muted';
+		}
+
+		return implode( ' ', $css_classes );
 	}
 
 	private function index_tabs_by_error_type_id( array $tabs ): array {
