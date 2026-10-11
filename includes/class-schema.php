@@ -126,6 +126,7 @@ class Schema {
 	private static function store_error_type( $id, $name ) {
 		global $wpdb;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->replace(
 			self::get_table_name( 'error_types' ),
 			array(

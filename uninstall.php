@@ -20,6 +20,7 @@ function attacklog_uninstall_site(): void {
 	foreach ( $table_suffixes_children_first as $table_suffix ) {
 		$table_name = \AttackLog\Schema::get_table_name( $table_suffix );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table_name ) );
 	}
 

@@ -56,6 +56,7 @@ class Logger {
 			? $ip_resolver->to_binary( $context->get_remote_addr() )
 			: null;
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( 'START TRANSACTION' );
 
 		$request_id = $this->repository->insert_request(
@@ -74,6 +75,7 @@ class Logger {
 
 		$this->repository->insert_request_errors( $request_id, $matched_error_types, $created_at );
 
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$wpdb->query( 'COMMIT' );
 	}
 }
