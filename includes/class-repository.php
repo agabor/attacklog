@@ -22,7 +22,8 @@ class Repository {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Write to a custom plugin table; an upsert cannot be cached and read caches are versioned and invalidated separately.
 		$wpdb->query(
 			$wpdb->prepare(
-				"INSERT INTO {$table} (http_method, request_path, path_hash, first_seen, last_seen, hit_count) VALUES (%s, %s, %s, %s, %s, 1) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), last_seen = %s, hit_count = hit_count + 1",
+				'INSERT INTO %i (http_method, request_path, path_hash, first_seen, last_seen, hit_count) VALUES (%s, %s, %s, %s, %s, 1) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), last_seen = %s, hit_count = hit_count + 1',
+				$table,
 				$http_method,
 				$request_path,
 				$path_hash,
@@ -49,7 +50,8 @@ class Repository {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Write to a custom plugin table; an upsert cannot be cached and read caches are versioned and invalidated separately.
 		$wpdb->query(
 			$wpdb->prepare(
-				"INSERT INTO {$table} (user_agent, ua_hash, first_seen, last_seen) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), last_seen = %s",
+				'INSERT INTO %i (user_agent, ua_hash, first_seen, last_seen) VALUES (%s, %s, %s, %s) ON DUPLICATE KEY UPDATE id = LAST_INSERT_ID(id), last_seen = %s',
+				$table,
 				$user_agent,
 				$ua_hash,
 				$current_time,
@@ -126,14 +128,14 @@ class Repository {
 		$errors_table   = Schema::get_table_name( 'request_errors' );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; the result is cached with wp_cache_set() below.
-		$tab_counts = array( 'all' => (int) $wpdb->get_var( "SELECT COUNT(*) FROM {$requests_table}" ) );
+		$tab_counts = array( 'all' => (int) $wpdb->get_var( $wpdb->prepare( 'SELECT COUNT(*) FROM %i', $requests_table ) ) );
 
 		foreach ( Schema::get_error_type_ids() as $error_type_id ) {
 			$tab_counts[ $error_type_id ] = 0;
 		}
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; the result is cached with wp_cache_set() below.
-		$count_rows = $wpdb->get_results( "SELECT error_type_id, COUNT(*) AS total FROM {$errors_table} GROUP BY error_type_id" );
+		$count_rows = $wpdb->get_results( $wpdb->prepare( 'SELECT error_type_id, COUNT(*) AS total FROM %i GROUP BY error_type_id', $errors_table ) );
 
 		foreach ( $count_rows as $count_row ) {
 			$tab_counts[ (int) $count_row->error_type_id ] = (int) $count_row->total;
@@ -187,24 +189,26 @@ class Repository {
 	}
 
 	private function get_request_joins_sql(): string {
-		$request_types_table = Schema::get_table_name( 'request_types' );
-		$user_agents_table   = Schema::get_table_name( 'user_agents' );
-
-		return "INNER JOIN {$request_types_table} t ON t.id = r.request_type_id LEFT JOIN {$user_agents_table} ua ON ua.id = r.user_agent_id";
+		return 'INNER JOIN %i t ON t.id = r.request_type_id LEFT JOIN %i ua ON ua.id = r.user_agent_id';
 	}
 
 	private function query_all_requests( $orderby, $order_direction, $page_size, $offset ) {
 		global $wpdb;
 
-		$requests_table   = Schema::get_table_name( 'requests' );
-		$selected_columns = $this->get_request_columns_sql();
-		$shared_joins     = $this->get_request_joins_sql();
-		$order_column     = 'return_code' === $orderby ? 'r.return_code' : 'r.created_at';
+		$requests_table      = Schema::get_table_name( 'requests' );
+		$request_types_table = Schema::get_table_name( 'request_types' );
+		$user_agents_table   = Schema::get_table_name( 'user_agents' );
+		$selected_columns    = $this->get_request_columns_sql();
+		$shared_joins        = $this->get_request_joins_sql();
+		$order_column        = 'return_code' === $orderby ? 'r.return_code' : 'r.created_at';
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin tables; the only caller, get_requests(), caches the result.
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT {$selected_columns}, NULL AS detail FROM {$requests_table} r {$shared_joins} ORDER BY {$order_column} {$order_direction}, r.id {$order_direction} LIMIT %d OFFSET %d",
+				"SELECT {$selected_columns}, NULL AS detail FROM %i r {$shared_joins} ORDER BY {$order_column} {$order_direction}, r.id {$order_direction} LIMIT %d OFFSET %d",
+				$requests_table,
+				$request_types_table,
+				$user_agents_table,
 				$page_size,
 				$offset
 			)
@@ -214,16 +218,22 @@ class Repository {
 	private function query_requests_by_error_type( $error_type_id, $orderby, $order_direction, $page_size, $offset ) {
 		global $wpdb;
 
-		$requests_table   = Schema::get_table_name( 'requests' );
-		$errors_table     = Schema::get_table_name( 'request_errors' );
-		$selected_columns = $this->get_request_columns_sql();
-		$shared_joins     = $this->get_request_joins_sql();
-		$order_column     = 'return_code' === $orderby ? 'r.return_code' : 'e.created_at';
+		$requests_table      = Schema::get_table_name( 'requests' );
+		$errors_table        = Schema::get_table_name( 'request_errors' );
+		$request_types_table = Schema::get_table_name( 'request_types' );
+		$user_agents_table   = Schema::get_table_name( 'user_agents' );
+		$selected_columns    = $this->get_request_columns_sql();
+		$shared_joins        = $this->get_request_joins_sql();
+		$order_column        = 'return_code' === $orderby ? 'r.return_code' : 'e.created_at';
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin tables; the only caller, get_requests(), caches the result.
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT {$selected_columns}, e.detail AS detail FROM {$errors_table} e INNER JOIN {$requests_table} r ON r.id = e.request_id {$shared_joins} WHERE e.error_type_id = %d ORDER BY {$order_column} {$order_direction}, r.id {$order_direction} LIMIT %d OFFSET %d",
+				"SELECT {$selected_columns}, e.detail AS detail FROM %i e INNER JOIN %i r ON r.id = e.request_id {$shared_joins} WHERE e.error_type_id = %d ORDER BY {$order_column} {$order_direction}, r.id {$order_direction} LIMIT %d OFFSET %d",
+				$errors_table,
+				$requests_table,
+				$request_types_table,
+				$user_agents_table,
 				$error_type_id,
 				$page_size,
 				$offset
@@ -253,8 +263,8 @@ class Repository {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; the result is cached with wp_cache_set() below.
 		$rows = $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT request_id, error_type_id, detail FROM {$errors_table} WHERE request_id IN ({$placeholders})",
-				$request_ids
+				"SELECT request_id, error_type_id, detail FROM %i WHERE request_id IN ({$placeholders})",
+				array_merge( array( $errors_table ), $request_ids )
 			)
 		);
 
@@ -285,7 +295,8 @@ class Repository {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; the result is cached with wp_cache_set() below.
 		$total_requests = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$errors_table} WHERE error_type_id = %d",
+				'SELECT COUNT(*) FROM %i WHERE error_type_id = %d',
+				$errors_table,
 				$error_type_id
 			)
 		);
@@ -293,7 +304,9 @@ class Repository {
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; the result is cached with wp_cache_set() below.
 		$shared_requests = (int) $wpdb->get_var(
 			$wpdb->prepare(
-				"SELECT COUNT(DISTINCT e.request_id) FROM {$errors_table} e INNER JOIN {$errors_table} o ON o.request_id = e.request_id AND o.error_type_id <> e.error_type_id WHERE e.error_type_id = %d",
+				'SELECT COUNT(DISTINCT e.request_id) FROM %i e INNER JOIN %i o ON o.request_id = e.request_id AND o.error_type_id <> e.error_type_id WHERE e.error_type_id = %d',
+				$errors_table,
+				$errors_table,
 				$error_type_id
 			)
 		);
@@ -320,7 +333,8 @@ class Repository {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Batched delete on a custom plugin table; the cache is invalidated in cleanup_orphans().
 			$deleted_rows = $wpdb->query(
 				$wpdb->prepare(
-					"DELETE FROM {$errors_table} WHERE error_type_id = %d LIMIT %d",
+					'DELETE FROM %i WHERE error_type_id = %d LIMIT %d',
+					$errors_table,
 					$error_type_id,
 					self::BATCH_SIZE
 				)
@@ -347,7 +361,8 @@ class Repository {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Fresh data is required to select rows for deletion; the cache is invalidated in cleanup_orphans().
 			$request_ids = $wpdb->get_col(
 				$wpdb->prepare(
-					"SELECT id FROM {$requests_table} WHERE created_at < %s LIMIT %d",
+					'SELECT id FROM %i WHERE created_at < %s LIMIT %d',
+					$requests_table,
 					$cutoff,
 					self::BATCH_SIZE
 				)
@@ -362,16 +377,16 @@ class Repository {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Batched delete on a custom plugin table; the cache is invalidated in cleanup_orphans().
 			$wpdb->query(
 				$wpdb->prepare(
-					"DELETE FROM {$errors_table} WHERE request_id IN ({$id_placeholders})",
-					$request_ids
+					"DELETE FROM %i WHERE request_id IN ({$id_placeholders})",
+					array_merge( array( $errors_table ), $request_ids )
 				)
 			);
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Batched delete on a custom plugin table; the cache is invalidated in cleanup_orphans().
 			$deleted_requests = $wpdb->query(
 				$wpdb->prepare(
-					"DELETE FROM {$requests_table} WHERE id IN ({$id_placeholders})",
-					$request_ids
+					"DELETE FROM %i WHERE id IN ({$id_placeholders})",
+					array_merge( array( $requests_table ), $request_ids )
 				)
 			);
 
@@ -408,7 +423,8 @@ class Repository {
 		$user_agents_table = Schema::get_table_name( 'user_agents' );
 
 		$prepared_condition_sql = $wpdb->prepare(
-			"r.user_agent_id IN (SELECT ua.id FROM {$user_agents_table} ua WHERE BINARY ua.user_agent = %s)",
+			'r.user_agent_id IN (SELECT ua.id FROM %i ua WHERE BINARY ua.user_agent = %s)',
+			$user_agents_table,
 			$user_agent
 		);
 
@@ -418,17 +434,19 @@ class Repository {
 	private function delete_error_rows_for_matching_requests( string $prepared_condition_sql, array $error_type_ids ): int {
 		global $wpdb;
 
-		$requests_table = Schema::get_table_name( 'requests' );
-		$errors_table   = Schema::get_table_name( 'request_errors' );
-		$select_filter  = $this->build_error_type_filter( 'e.error_type_id', $error_type_ids );
-		$delete_filter  = $this->build_error_type_filter( 'error_type_id', $error_type_ids );
-		$limit_clause   = $wpdb->prepare( 'LIMIT %d', self::BATCH_SIZE );
-		$total_requests = 0;
+		$requests_table   = Schema::get_table_name( 'requests' );
+		$errors_table     = Schema::get_table_name( 'request_errors' );
+		$select_statement = $wpdb->prepare( 'SELECT DISTINCT r.id FROM %i r INNER JOIN %i e ON e.request_id = r.id WHERE', $requests_table, $errors_table );
+		$delete_statement = $wpdb->prepare( 'DELETE FROM %i WHERE', $errors_table );
+		$select_filter    = $this->build_error_type_filter( 'e.error_type_id', $error_type_ids );
+		$delete_filter    = $this->build_error_type_filter( 'error_type_id', $error_type_ids );
+		$limit_clause     = $wpdb->prepare( 'LIMIT %d', self::BATCH_SIZE );
+		$total_requests   = 0;
 
 		do {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Fresh data is required to select rows for deletion; all interpolated fragments were already prepared; the cache is invalidated in cleanup_orphans().
 			$request_ids = $wpdb->get_col(
-				"SELECT DISTINCT r.id FROM {$requests_table} r INNER JOIN {$errors_table} e ON e.request_id = r.id WHERE {$prepared_condition_sql} {$select_filter} {$limit_clause}"
+				"{$select_statement} {$prepared_condition_sql} {$select_filter} {$limit_clause}"
 			);
 
 			if ( empty( $request_ids ) ) {
@@ -439,7 +457,7 @@ class Repository {
 			$id_clause       = $wpdb->prepare( "request_id IN ({$id_placeholders})", $request_ids );
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Batched delete on a custom plugin table; all interpolated fragments were already prepared; the cache is invalidated in cleanup_orphans().
-			$wpdb->query( "DELETE FROM {$errors_table} WHERE {$id_clause} {$delete_filter}" );
+			$wpdb->query( "{$delete_statement} {$id_clause} {$delete_filter}" );
 
 			$total_requests += count( $request_ids );
 		} while ( count( $request_ids ) === self::BATCH_SIZE );
@@ -481,7 +499,8 @@ class Repository {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Batched delete on a custom plugin table; the cache is invalidated in delete_all().
 			$deleted_rows = (int) $wpdb->query(
 				$wpdb->prepare(
-					"DELETE FROM {$table} LIMIT %d",
+					'DELETE FROM %i LIMIT %d',
+					$table,
 					self::BATCH_SIZE
 				)
 			);
@@ -509,7 +528,11 @@ class Repository {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Fresh data is required to find orphans on custom plugin tables; the cache is invalidated in cleanup_orphans().
 			$orphan_ids = $wpdb->get_col(
 				$wpdb->prepare(
-					"SELECT p.id FROM {$parent_table} p LEFT JOIN {$child_table} c ON c.{$child_column} = p.id WHERE c.{$child_column} IS NULL LIMIT %d",
+					'SELECT p.id FROM %i p LEFT JOIN %i c ON c.%i = p.id WHERE c.%i IS NULL LIMIT %d',
+					$parent_table,
+					$child_table,
+					$child_column,
+					$child_column,
 					self::BATCH_SIZE
 				)
 			);
@@ -523,8 +546,8 @@ class Repository {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Batched delete on a custom plugin table; the cache is invalidated in cleanup_orphans().
 			$deleted_rows = $wpdb->query(
 				$wpdb->prepare(
-					"DELETE FROM {$parent_table} WHERE id IN ({$placeholders})",
-					$orphan_ids
+					"DELETE FROM %i WHERE id IN ({$placeholders})",
+					array_merge( array( $parent_table ), $orphan_ids )
 				)
 			);
 
@@ -542,7 +565,11 @@ class Repository {
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Maintenance update on a custom plugin table; the cache is invalidated in cleanup_orphans().
 		$wpdb->query(
-			"UPDATE {$request_types_table} t INNER JOIN (SELECT request_type_id, COUNT(*) AS total FROM {$requests_table} GROUP BY request_type_id) c ON c.request_type_id = t.id SET t.hit_count = c.total WHERE t.hit_count <> c.total"
+			$wpdb->prepare(
+				'UPDATE %i t INNER JOIN (SELECT request_type_id, COUNT(*) AS total FROM %i GROUP BY request_type_id) c ON c.request_type_id = t.id SET t.hit_count = c.total WHERE t.hit_count <> c.total',
+				$request_types_table,
+				$requests_table
+			)
 		);
 	}
 
