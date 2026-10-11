@@ -188,27 +188,29 @@ class Repository {
 		return 'r.id, r.return_code, r.cf_ray, r.cf_ipcountry, r.cf_visitor, r.client_ip, r.remote_addr, r.created_at, t.http_method, t.request_path, ua.user_agent';
 	}
 
-	private function get_request_joins_sql(): string {
-		return 'INNER JOIN %i t ON t.id = r.request_type_id LEFT JOIN %i ua ON ua.id = r.user_agent_id';
+	private function build_prepared_request_joins_sql(): string {
+		global $wpdb;
+
+		return $wpdb->prepare(
+			'INNER JOIN %i t ON t.id = r.request_type_id LEFT JOIN %i ua ON ua.id = r.user_agent_id',
+			Schema::get_table_name( 'request_types' ),
+			Schema::get_table_name( 'user_agents' )
+		);
 	}
 
 	private function query_all_requests( $orderby, $order_direction, $page_size, $offset ) {
 		global $wpdb;
 
-		$requests_table      = Schema::get_table_name( 'requests' );
-		$request_types_table = Schema::get_table_name( 'request_types' );
-		$user_agents_table   = Schema::get_table_name( 'user_agents' );
-		$selected_columns    = $this->get_request_columns_sql();
-		$shared_joins        = $this->get_request_joins_sql();
-		$order_column        = 'return_code' === $orderby ? 'r.return_code' : 'r.created_at';
+		$requests_table   = Schema::get_table_name( 'requests' );
+		$selected_columns = $this->get_request_columns_sql();
+		$prepared_joins   = $this->build_prepared_request_joins_sql();
+		$order_column     = 'return_code' === $orderby ? 'r.return_code' : 'r.created_at';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin tables; the only caller, get_requests(), caches the result.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Custom plugin tables; the only caller, get_requests(), caches the result; all interpolated fragments were already prepared.
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT {$selected_columns}, NULL AS detail FROM %i r {$shared_joins} ORDER BY {$order_column} {$order_direction}, r.id {$order_direction} LIMIT %d OFFSET %d",
+				"SELECT {$selected_columns}, NULL AS detail FROM %i r {$prepared_joins} ORDER BY {$order_column} {$order_direction}, r.id {$order_direction} LIMIT %d OFFSET %d",
 				$requests_table,
-				$request_types_table,
-				$user_agents_table,
 				$page_size,
 				$offset
 			)
@@ -218,22 +220,18 @@ class Repository {
 	private function query_requests_by_error_type( $error_type_id, $orderby, $order_direction, $page_size, $offset ) {
 		global $wpdb;
 
-		$requests_table      = Schema::get_table_name( 'requests' );
-		$errors_table        = Schema::get_table_name( 'request_errors' );
-		$request_types_table = Schema::get_table_name( 'request_types' );
-		$user_agents_table   = Schema::get_table_name( 'user_agents' );
-		$selected_columns    = $this->get_request_columns_sql();
-		$shared_joins        = $this->get_request_joins_sql();
-		$order_column        = 'return_code' === $orderby ? 'r.return_code' : 'e.created_at';
+		$requests_table   = Schema::get_table_name( 'requests' );
+		$errors_table     = Schema::get_table_name( 'request_errors' );
+		$selected_columns = $this->get_request_columns_sql();
+		$prepared_joins   = $this->build_prepared_request_joins_sql();
+		$order_column     = 'return_code' === $orderby ? 'r.return_code' : 'e.created_at';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Custom plugin tables; the only caller, get_requests(), caches the result.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Custom plugin tables; the only caller, get_requests(), caches the result; all interpolated fragments were already prepared.
 		return $wpdb->get_results(
 			$wpdb->prepare(
-				"SELECT {$selected_columns}, e.detail AS detail FROM %i e INNER JOIN %i r ON r.id = e.request_id {$shared_joins} WHERE e.error_type_id = %d ORDER BY {$order_column} {$order_direction}, r.id {$order_direction} LIMIT %d OFFSET %d",
+				"SELECT {$selected_columns}, e.detail AS detail FROM %i e INNER JOIN %i r ON r.id = e.request_id {$prepared_joins} WHERE e.error_type_id = %d ORDER BY {$order_column} {$order_direction}, r.id {$order_direction} LIMIT %d OFFSET %d",
 				$errors_table,
 				$requests_table,
-				$request_types_table,
-				$user_agents_table,
 				$error_type_id,
 				$page_size,
 				$offset
