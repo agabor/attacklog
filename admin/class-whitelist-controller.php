@@ -90,25 +90,25 @@ class Whitelist_Controller {
 	}
 
 	private function read_entry_id(): string {
-		return isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : '';
+		return isset( $_POST['id'] ) ? sanitize_text_field( wp_unslash( $_POST['id'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in verify_request() by every caller.
 	}
 
 	private function read_input(): array {
 		return array(
-			'type'            => isset( $_POST['type'] ) ? sanitize_key( wp_unslash( $_POST['type'] ) ) : '',
+			'type'            => isset( $_POST['type'] ) ? sanitize_key( wp_unslash( $_POST['type'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in verify_request() by every caller.
 			'value'           => $this->read_value(),
-			'categories'      => isset( $_POST['categories'] ) ? sanitize_text_field( wp_unslash( $_POST['categories'] ) ) : Whitelist::CATEGORY_ALL,
-			'note'            => isset( $_POST['note'] ) ? sanitize_text_field( wp_unslash( $_POST['note'] ) ) : '',
-			'delete_existing' => isset( $_POST['delete_existing'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['delete_existing'] ) ),
+			'categories'      => isset( $_POST['categories'] ) ? sanitize_text_field( wp_unslash( $_POST['categories'] ) ) : Whitelist::CATEGORY_ALL, // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in verify_request() by every caller.
+			'note'            => isset( $_POST['note'] ) ? sanitize_text_field( wp_unslash( $_POST['note'] ) ) : '', // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in verify_request() by every caller.
+			'delete_existing' => isset( $_POST['delete_existing'] ) && '1' === sanitize_text_field( wp_unslash( $_POST['delete_existing'] ) ), // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in verify_request() by every caller.
 		);
 	}
 
 	private function read_value(): string {
-		if ( ! isset( $_POST['value'] ) ) {
+		if ( ! isset( $_POST['value'] ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in verify_request() by every caller.
 			return '';
 		}
 
-		$sanitized_value = Request_Context::sanitize_user_agent( wp_unslash( $_POST['value'] ) );
+		$sanitized_value = Request_Context::sanitize_user_agent( wp_unslash( $_POST['value'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Missing, WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Nonce verified in verify_request() by every caller; sanitized by Request_Context::sanitize_user_agent().
 
 		return null === $sanitized_value ? '' : $sanitized_value;
 	}

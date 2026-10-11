@@ -132,7 +132,7 @@ class Admin_Page {
 	}
 
 	public function get_current_section(): string {
-		$requested_section = isset( $_GET[ self::SECTION_PARAM ] ) ? sanitize_key( wp_unslash( $_GET[ self::SECTION_PARAM ] ) ) : '';
+		$requested_section = isset( $_GET[ self::SECTION_PARAM ] ) ? sanitize_key( wp_unslash( $_GET[ self::SECTION_PARAM ] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation parameter.
 
 		return self::SECTION_WHITELIST === $requested_section ? self::SECTION_WHITELIST : self::SECTION_LOG;
 	}
@@ -227,7 +227,7 @@ class Admin_Page {
 		$user_id     = get_current_user_id();
 		$stored_slug = (string) get_user_meta( $user_id, self::LAST_TAB_META_KEY, true );
 
-		$requested_slug = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : '';
+		$requested_slug = isset( $_GET['type'] ) ? sanitize_key( wp_unslash( $_GET['type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only navigation parameter, validated against a fixed list of slugs.
 
 		if ( in_array( $requested_slug, $valid_slugs, true ) ) {
 			if ( $requested_slug !== $stored_slug ) {
@@ -526,18 +526,18 @@ class Admin_Page {
 	}
 
 	private function read_requested_page(): int {
-		return isset( $_GET['paged'] ) ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) ) : 1;
+		return isset( $_GET['paged'] ) ? max( 1, absint( wp_unslash( $_GET['paged'] ) ) ) : 1; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only pagination parameter.
 	}
 
 	private function read_sort(): array {
 		$orderby_param = 'time';
 		$order_param   = 'desc';
 
-		if ( isset( $_GET['orderby'] ) && 'code' === sanitize_key( wp_unslash( $_GET['orderby'] ) ) ) {
+		if ( isset( $_GET['orderby'] ) && 'code' === sanitize_key( wp_unslash( $_GET['orderby'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only sorting parameter, compared against a fixed value.
 			$orderby_param = 'code';
 		}
 
-		if ( isset( $_GET['order'] ) && 'asc' === sanitize_key( wp_unslash( $_GET['order'] ) ) ) {
+		if ( isset( $_GET['order'] ) && 'asc' === sanitize_key( wp_unslash( $_GET['order'] ) ) ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only sorting parameter, compared against a fixed value.
 			$order_param = 'asc';
 		}
 

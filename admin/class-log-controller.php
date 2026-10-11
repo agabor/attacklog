@@ -37,7 +37,7 @@ class Log_Controller {
 	public function ajax_toggle_cf(): void {
 		$this->verify_request();
 
-		$posted_value = isset( $_POST['enabled'] ) ? sanitize_text_field( wp_unslash( $_POST['enabled'] ) ) : '';
+		$posted_value = isset( $_POST['enabled'] ) ? sanitize_text_field( wp_unslash( $_POST['enabled'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in verify_request().
 		$enabled      = in_array( strtolower( $posted_value ), array( '1', 'true', 'on' ), true );
 
 		Cf_Detector::set_status( $enabled, 'user', get_current_user_id() );
@@ -73,7 +73,7 @@ class Log_Controller {
 	public function ajax_clear_all(): void {
 		$this->verify_request();
 
-		$confirmation = isset( $_POST['confirmation'] ) ? sanitize_text_field( wp_unslash( $_POST['confirmation'] ) ) : '';
+		$confirmation = isset( $_POST['confirmation'] ) ? sanitize_text_field( wp_unslash( $_POST['confirmation'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in verify_request().
 
 		if ( 'CLEAR' !== $confirmation ) {
 			wp_send_json_error(
@@ -88,7 +88,7 @@ class Log_Controller {
 	}
 
 	public function get_valid_error_type_id(): int {
-		$error_type_id = isset( $_POST['error_type_id'] ) ? (int) sanitize_text_field( wp_unslash( $_POST['error_type_id'] ) ) : 0;
+		$error_type_id = isset( $_POST['error_type_id'] ) ? (int) sanitize_text_field( wp_unslash( $_POST['error_type_id'] ) ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Missing -- Nonce verified in verify_request() by every caller.
 
 		if ( ! in_array( $error_type_id, array_values( Schema::get_error_type_ids() ), true ) ) {
 			wp_send_json_error(
