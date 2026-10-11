@@ -198,6 +198,25 @@ class Repository {
 		);
 	}
 
+	private function build_prepared_id_list_sql( array $ids ): string {
+		global $wpdb;
+
+		$unique_ids = array_values( array_unique( array_map( 'intval', $ids ) ) );
+
+		if ( empty( $unique_ids ) ) {
+			return '(NULL)';
+		}
+
+		$prepared_ids = array_map(
+			function ( $id ) use ( $wpdb ) {
+				return $wpdb->prepare( '%d', $id );
+			},
+			$unique_ids
+		);
+
+		return '(' . implode( ',', $prepared_ids ) . ')';
+	}
+
 	private function query_all_requests( $orderby, $order_direction, $page_size, $offset ) {
 		global $wpdb;
 
@@ -256,15 +275,10 @@ class Repository {
 		}
 
 		$errors_table = Schema::get_table_name( 'request_errors' );
-		$placeholders = implode( ',', array_fill( 0, count( $request_ids ), '%d' ) );
+		$id_list      = $this->build_prepared_id_list_sql( $request_ids );
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery -- Custom plugin table; the result is cached with wp_cache_set() below.
-		$rows = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT request_id, error_type_id, detail FROM %i WHERE request_id IN ({$placeholders})",
-				array_merge( array( $errors_table ), $request_ids )
-			)
-		);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Custom plugin table; the result is cached with wp_cache_set() below; all interpolated fragments were already prepared.
+		$rows = $wpdb->get_results( $wpdb->prepare( "SELECT request_id, error_type_id, detail FROM %i WHERE request_id IN {$id_list}", $errors_table ) );
 
 		$error_types_by_request = array();
 
@@ -370,23 +384,13 @@ class Repository {
 				break;
 			}
 
-			$id_placeholders = implode( ',', array_fill( 0, count( $request_ids ), '%d' ) );
+			$id_list = $this->build_prepared_id_list_sql( $request_ids );
 
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Batched delete on a custom plugin table; the cache is invalidated in cleanup_orphans().
-			$wpdb->query(
-				$wpdb->prepare(
-					"DELETE FROM %i WHERE request_id IN ({$id_placeholders})",
-					array_merge( array( $errors_table ), $request_ids )
-				)
-			);
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Batched delete on a custom plugin table; all interpolated fragments were already prepared; the cache is invalidated in cleanup_orphans().
+			$wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE request_id IN {$id_list}", $errors_table ) );
 
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Batched delete on a custom plugin table; the cache is invalidated in cleanup_orphans().
-			$deleted_requests = $wpdb->query(
-				$wpdb->prepare(
-					"DELETE FROM %i WHERE id IN ({$id_placeholders})",
-					array_merge( array( $requests_table ), $request_ids )
-				)
-			);
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Batched delete on a custom plugin table; all interpolated fragments were already prepared; the cache is invalidated in cleanup_orphans().
+			$deleted_requests = $wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE id IN {$id_list}", $requests_table ) );
 
 			if ( ! $deleted_requests ) {
 				break;
@@ -443,16 +447,13 @@ class Repository {
 
 		do {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Fresh data is required to select rows for deletion; all interpolated fragments were already prepared; the cache is invalidated in cleanup_orphans().
-			$request_ids = $wpdb->get_col(
-				"{$select_statement} {$prepared_condition_sql} {$select_filter} {$limit_clause}"
-			);
+			$request_ids = $wpdb->get_col( "{$select_statement} {$prepared_condition_sql} {$select_filter} {$limit_clause}" );
 
 			if ( empty( $request_ids ) ) {
 				break;
 			}
 
-			$id_placeholders = implode( ',', array_fill( 0, count( $request_ids ), '%d' ) );
-			$id_clause       = $wpdb->prepare( "request_id IN ({$id_placeholders})", $request_ids );
+			$id_clause = 'request_id IN ' . $this->build_prepared_id_list_sql( $request_ids );
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Batched delete on a custom plugin table; all interpolated fragments were already prepared; the cache is invalidated in cleanup_orphans().
 			$wpdb->query( "{$delete_statement} {$id_clause} {$delete_filter}" );
@@ -468,17 +469,11 @@ class Repository {
 	}
 
 	private function build_error_type_filter( string $column_name, array $error_type_ids ): string {
-		global $wpdb;
-
-		$error_type_ids = array_values( array_unique( array_map( 'intval', $error_type_ids ) ) );
-
 		if ( empty( $error_type_ids ) ) {
 			return '';
 		}
 
-		$placeholders = implode( ',', array_fill( 0, count( $error_type_ids ), '%d' ) );
-
-		return $wpdb->prepare( "AND {$column_name} IN ({$placeholders})", $error_type_ids );
+		return "AND {$column_name} IN " . $this->build_prepared_id_list_sql( $error_type_ids );
 	}
 
 	public function delete_all(): void {
@@ -539,15 +534,10 @@ class Repository {
 				return;
 			}
 
-			$placeholders = implode( ',', array_fill( 0, count( $orphan_ids ), '%d' ) );
+			$id_list = $this->build_prepared_id_list_sql( $orphan_ids );
 
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Batched delete on a custom plugin table; the cache is invalidated in cleanup_orphans().
-			$deleted_rows = $wpdb->query(
-				$wpdb->prepare(
-					"DELETE FROM %i WHERE id IN ({$placeholders})",
-					array_merge( array( $parent_table ), $orphan_ids )
-				)
-			);
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Batched delete on a custom plugin table; all interpolated fragments were already prepared; the cache is invalidated in cleanup_orphans().
+			$deleted_rows = $wpdb->query( $wpdb->prepare( "DELETE FROM %i WHERE id IN {$id_list}", $parent_table ) );
 
 			if ( ! $deleted_rows ) {
 				return;
