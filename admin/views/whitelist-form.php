@@ -2,13 +2,13 @@
 
 defined( 'ABSPATH' ) || exit;
 
-$is_modal = ! empty( $is_modal );
+$attacklog_is_modal = ! empty( $is_modal );
 ?>
-<?php if ( $is_modal ) : ?>
+<?php if ( $attacklog_is_modal ) : ?>
 <div class="attacklog-wl-modal" id="attacklog-wl-modal" role="dialog" aria-modal="true" aria-labelledby="attacklog-wl-title" hidden>
 	<div class="attacklog-wl-modal__backdrop"></div>
 <?php endif; ?>
-	<form class="attacklog-card attacklog-wl-form" id="attacklog-wl-form"<?php echo $is_modal ? '' : ' hidden'; ?>>
+	<form class="attacklog-card attacklog-wl-form" id="attacklog-wl-form"<?php echo $attacklog_is_modal ? '' : ' hidden'; ?>>
 		<h2 class="attacklog-wl-form-title" id="attacklog-wl-title"><?php esc_html_e( 'Add whitelist entry', 'attacklog' ); ?></h2>
 
 		<input type="hidden" id="attacklog-wl-id" value="">
@@ -33,10 +33,10 @@ $is_modal = ! empty( $is_modal );
 				<input type="checkbox" class="attacklog-wl-category" data-category="all" checked>
 				<?php esc_html_e( 'All categories', 'attacklog' ); ?>
 			</label>
-			<?php foreach ( $category_options as $category_option ) : ?>
+			<?php foreach ( $category_options as $attacklog_category_option ) : ?>
 				<label class="attacklog-wl-check">
-					<input type="checkbox" class="attacklog-wl-category" data-category="<?php echo esc_attr( (string) $category_option['id'] ); ?>">
-					<?php echo esc_html( $category_option['label'] ); ?>
+					<input type="checkbox" class="attacklog-wl-category" data-category="<?php echo esc_attr( (string) $attacklog_category_option['id'] ); ?>">
+					<?php echo esc_html( $attacklog_category_option['label'] ); ?>
 				</label>
 			<?php endforeach; ?>
 		</fieldset>
@@ -60,6 +60,6 @@ $is_modal = ! empty( $is_modal );
 			<button type="button" class="button" id="attacklog-wl-cancel"><?php esc_html_e( 'Cancel', 'attacklog' ); ?></button>
 		</div>
 	</form>
-<?php if ( $is_modal ) : ?>
+<?php if ( $attacklog_is_modal ) : ?>
 </div>
 <?php endif; ?>

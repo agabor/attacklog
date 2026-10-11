@@ -47,37 +47,37 @@ defined( 'ABSPATH' ) || exit;
 						</tr>
 					</thead>
 					<tbody>
-						<?php foreach ( $entries as $entry ) : ?>
+						<?php foreach ( $entries as $attacklog_entry ) : ?>
 							<tr>
 								<td class="attacklog-cell">
-									<span class="attacklog-wl-type attacklog-wl-type--<?php echo esc_attr( $entry['type'] ); ?>"><?php echo esc_html( $entry['type_label'] ); ?></span>
+									<span class="attacklog-wl-type attacklog-wl-type--<?php echo esc_attr( $attacklog_entry['type'] ); ?>"><?php echo esc_html( $attacklog_entry['type_label'] ); ?></span>
 								</td>
 								<td class="attacklog-cell attacklog-cell--value">
-									<span class="attacklog-mono attacklog-ellipsis" title="<?php echo esc_attr( $entry['value'] ); ?>"><?php echo esc_html( $entry['value'] ); ?></span>
+									<span class="attacklog-mono attacklog-ellipsis" title="<?php echo esc_attr( $attacklog_entry['value'] ); ?>"><?php echo esc_html( $attacklog_entry['value'] ); ?></span>
 								</td>
-								<td class="attacklog-cell"><?php echo esc_html( $entry['applies_to'] ); ?></td>
+								<td class="attacklog-cell"><?php echo esc_html( $attacklog_entry['applies_to'] ); ?></td>
 								<td class="attacklog-cell">
-									<span><?php echo esc_html( $entry['note'] ); ?></span>
-									<?php if ( '' !== $entry['created_at'] ) : ?>
+									<span><?php echo esc_html( $attacklog_entry['note'] ); ?></span>
+									<?php if ( '' !== $attacklog_entry['created_at'] ) : ?>
 										<span class="attacklog-second-line attacklog-wl-meta">
 											<?php
 											echo esc_html(
-												'' !== $entry['created_by']
+												'' !== $attacklog_entry['created_by']
 													? sprintf(
 														/* translators: 1: user display name, 2: date and time. */
 														__( 'Added by %1$s, %2$s', 'attacklog' ),
-														$entry['created_by'],
-														$entry['created_at']
+														$attacklog_entry['created_by'],
+														$attacklog_entry['created_at']
 													)
-													: $entry['created_at']
+													: $attacklog_entry['created_at']
 											);
 											?>
 										</span>
 									<?php endif; ?>
 								</td>
 								<td class="attacklog-cell attacklog-wl-row-actions">
-									<button type="button" class="button attacklog-wl-edit" data-entry="<?php echo esc_attr( $entry['entry_json'] ); ?>"><?php esc_html_e( 'Edit', 'attacklog' ); ?></button>
-									<button type="button" class="button button-link-delete attacklog-wl-delete" data-entry="<?php echo esc_attr( $entry['entry_json'] ); ?>"><?php esc_html_e( 'Delete', 'attacklog' ); ?></button>
+									<button type="button" class="button attacklog-wl-edit" data-entry="<?php echo esc_attr( $attacklog_entry['entry_json'] ); ?>"><?php esc_html_e( 'Edit', 'attacklog' ); ?></button>
+									<button type="button" class="button button-link-delete attacklog-wl-delete" data-entry="<?php echo esc_attr( $attacklog_entry['entry_json'] ); ?>"><?php esc_html_e( 'Delete', 'attacklog' ); ?></button>
 								</td>
 							</tr>
 						<?php endforeach; ?>

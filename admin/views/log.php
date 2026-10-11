@@ -80,37 +80,37 @@ defined( 'ABSPATH' ) || exit;
 						</tr>
 					</thead>
 					<tbody>
-						<?php foreach ( $rows as $row ) : ?>
+						<?php foreach ( $rows as $attacklog_row ) : ?>
 							<tr>
-								<td class="attacklog-cell attacklog-cell--time"><?php echo esc_html( $row['time'] ); ?></td>
-								<td class="attacklog-cell attacklog-cell--method"><?php echo esc_html( $row['method'] ); ?></td>
+								<td class="attacklog-cell attacklog-cell--time"><?php echo esc_html( $attacklog_row['time'] ); ?></td>
+								<td class="attacklog-cell attacklog-cell--method"><?php echo esc_html( $attacklog_row['method'] ); ?></td>
 								<td class="attacklog-cell attacklog-cell--path">
-									<span class="attacklog-mono attacklog-ellipsis" title="<?php echo esc_attr( $row['path'] ); ?>"><?php echo esc_html( $row['path'] ); ?></span>
-									<span class="attacklog-second-line attacklog-mono attacklog-ellipsis" title="<?php echo esc_attr( $row['second_line'] ); ?>"><?php echo esc_html( $row['second_line'] ); ?></span>
+									<span class="attacklog-mono attacklog-ellipsis" title="<?php echo esc_attr( $attacklog_row['path'] ); ?>"><?php echo esc_html( $attacklog_row['path'] ); ?></span>
+									<span class="attacklog-second-line attacklog-mono attacklog-ellipsis" title="<?php echo esc_attr( $attacklog_row['second_line'] ); ?>"><?php echo esc_html( $attacklog_row['second_line'] ); ?></span>
 								</td>
-								<td class="attacklog-cell attacklog-cell--code"><span class="attacklog-code <?php echo esc_attr( $row['status_class'] ); ?>"><?php echo esc_html( (string) $row['status_code'] ); ?></span></td>
+								<td class="attacklog-cell attacklog-cell--code"><span class="attacklog-code <?php echo esc_attr( $attacklog_row['status_class'] ); ?>"><?php echo esc_html( (string) $attacklog_row['status_code'] ); ?></span></td>
 								<td class="attacklog-cell attacklog-cell--ip">
-									<span class="attacklog-mono"><?php echo '' !== $row['client_ip'] ? esc_html( $row['client_ip'] ) : '—'; ?></span>
-									<?php if ( ! empty( $row['addresses_differ'] ) ) : ?>
-										<span class="attacklog-remote-addr attacklog-mono is-different" title="<?php esc_attr_e( 'Actual connecting address differs from the client IP', 'attacklog' ); ?>"><?php echo esc_html( $row['remote_addr'] ); ?></span>
+									<span class="attacklog-mono"><?php echo '' !== $attacklog_row['client_ip'] ? esc_html( $attacklog_row['client_ip'] ) : '—'; ?></span>
+									<?php if ( ! empty( $attacklog_row['addresses_differ'] ) ) : ?>
+										<span class="attacklog-remote-addr attacklog-mono is-different" title="<?php esc_attr_e( 'Actual connecting address differs from the client IP', 'attacklog' ); ?>"><?php echo esc_html( $attacklog_row['remote_addr'] ); ?></span>
 									<?php endif; ?>
 								</td>
 								<td class="attacklog-cell attacklog-cell--types">
-									<?php foreach ( $row['badges'] as $badge ) : ?>
-										<a class="attacklog-badge <?php echo esc_attr( $badge['badge_class'] ); ?>" href="<?php echo esc_url( $badge['url'] ); ?>"><?php echo esc_html( $badge['label'] ); ?></a>
+									<?php foreach ( $attacklog_row['badges'] as $attacklog_badge ) : ?>
+										<a class="attacklog-badge <?php echo esc_attr( $attacklog_badge['badge_class'] ); ?>" href="<?php echo esc_url( $attacklog_badge['url'] ); ?>"><?php echo esc_html( $attacklog_badge['label'] ); ?></a>
 									<?php endforeach; ?>
 								</td>
 								<td class="attacklog-cell attacklog-cell--whitelist">
-									<?php foreach ( $row['whitelist'] as $button_kind => $whitelist_button ) : ?>
+									<?php foreach ( $attacklog_row['whitelist'] as $attacklog_button_kind => $attacklog_whitelist_button ) : ?>
 										<button
 											type="button"
-											class="button button-small attacklog-wl-row-button<?php echo ! empty( $whitelist_button['exists'] ) ? ' is-existing' : ''; ?>"
-											data-kind="<?php echo esc_attr( $button_kind ); ?>"
-											data-prefill="<?php echo esc_attr( $whitelist_button['prefill_json'] ); ?>"
-											data-existing="<?php echo esc_attr( $whitelist_button['existing_json'] ); ?>"
-											title="<?php echo esc_attr( $whitelist_button['title'] ); ?>"
-											<?php disabled( ! empty( $whitelist_button['disabled'] ) ); ?>
-										><?php echo esc_html( ( ! empty( $whitelist_button['exists'] ) ? '✓ ' : '+ ' ) . $whitelist_button['label'] ); ?></button>
+											class="button button-small attacklog-wl-row-button<?php echo ! empty( $attacklog_whitelist_button['exists'] ) ? ' is-existing' : ''; ?>"
+											data-kind="<?php echo esc_attr( $attacklog_button_kind ); ?>"
+											data-prefill="<?php echo esc_attr( $attacklog_whitelist_button['prefill_json'] ); ?>"
+											data-existing="<?php echo esc_attr( $attacklog_whitelist_button['existing_json'] ); ?>"
+											title="<?php echo esc_attr( $attacklog_whitelist_button['title'] ); ?>"
+											<?php disabled( ! empty( $attacklog_whitelist_button['disabled'] ) ); ?>
+										><?php echo esc_html( ( ! empty( $attacklog_whitelist_button['exists'] ) ? '✓ ' : '+ ' ) . $attacklog_whitelist_button['label'] ); ?></button>
 									<?php endforeach; ?>
 								</td>
 							</tr>
