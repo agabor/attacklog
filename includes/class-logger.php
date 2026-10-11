@@ -18,11 +18,6 @@ class Logger {
 		try {
 			$this->process( $context );
 		} catch ( \Throwable $caught_exception ) {
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log(
-					sprintf( 'Attack Log: %s', $caught_exception->getMessage() )
-				);
-			}
 		}
 	}
 

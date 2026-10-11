@@ -40,7 +40,7 @@ class Request_Context {
 			: '';
 
 		$raw_path = isset( $_SERVER['REQUEST_URI'] )
-			? wp_unslash( $_SERVER['REQUEST_URI'] )
+			? esc_url_raw( wp_unslash( $_SERVER['REQUEST_URI'] ) )
 			: '';
 
 		$request_context->normalized_path = self::normalize_path( $raw_path );
@@ -49,7 +49,7 @@ class Request_Context {
 		$request_context->remote_addr = $ip_resolver->resolve_remote_addr();
 
 		$raw_user_agent = isset( $_SERVER['HTTP_USER_AGENT'] )
-			? wp_unslash( $_SERVER['HTTP_USER_AGENT'] )
+			? sanitize_text_field( wp_unslash( $_SERVER['HTTP_USER_AGENT'] ) )
 			: null;
 
 		$request_context->user_agent = self::sanitize_user_agent( $raw_user_agent );

@@ -31,12 +31,6 @@ class Cron {
 		try {
 			return $this->repository->delete_requests_older_than( $this->get_keep_days() );
 		} catch ( \Throwable $caught_exception ) {
-			if ( defined( 'WP_DEBUG' ) && WP_DEBUG ) {
-				error_log(
-					sprintf( 'Attack Log: %s', $caught_exception->getMessage() )
-				);
-			}
-
 			return 0;
 		}
 	}
