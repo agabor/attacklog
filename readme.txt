@@ -8,11 +8,13 @@ Stable tag: 1.0.0
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
-Logs suspicious requests: Cloudflare bypasses, probing for secret files, direct PHP access, XML-RPC calls and scanner user agents.
+See who is probing your site: Cloudflare bypasses, secret-file scans, backdoor access, XML-RPC abuse and scanner user agents.
 
 == Description ==
 
 Attack Log shows you who is poking at your site and how. It records suspicious requests in your own database and lists them in a simple admin screen, one tab per type.
+
+If your site is behind Cloudflare, Attack Log also tells you something few other tools do: whether anyone is reaching your server **directly**, skipping Cloudflare and its firewall altogether.
 
 **Attack Log is a log, not a firewall.** It does not block, rate-limit or challenge anything. It tells you what is happening so you can decide what to do — for example, add a firewall rule at your host or in Cloudflare.
 
@@ -26,7 +28,7 @@ Attack Log shows you who is poking at your site and how. It records suspicious r
 
 One request can match several types — for example a probe for `.env` sent with `curl`. It is stored once and appears in each matching tab, and in the **All** tab.
 
-For each logged request Attack Log stores the time, method, path, status code, client IP address, User-Agent, and the Cloudflare headers if present.
+For each logged request Attack Log stores the time, method, path, status code, client IP address, the address that actually connected to your server, User-Agent, and the Cloudflare headers if present.
 
 = Features =
 
@@ -35,7 +37,7 @@ For each logged request Attack Log stores the time, method, path, status code, c
 * Cloudflare card: shows whether your current request came through Cloudflare, and a switch to turn bypass detection on or off.
 * Whitelist by exact IP address or exact User-Agent, for all types or selected ones — for example your uptime monitor or office IP. Each log row has buttons to whitelist its IP or User-Agent in one click.
 * Clear one type, or clear the whole log.
-* Automatic clean-up: keeps the last 30 days by default (configurable, 1–365 days).
+* Automatic clean-up: entries older than 30 days are deleted daily.
 * Requests from logged-in users are never logged.
 
 = What Attack Log cannot see =
@@ -45,6 +47,7 @@ Please read this before relying on the log.
 * **Only requests that reach WordPress are logged.** Requests for files that exist on disk, requests your web server blocks itself, and pages served from a full-page cache (for example Cloudflare APO, Varnish or a static cache plugin) never reach WordPress, so they are not in the log.
 * **An existing backdoor is invisible.** If a malicious PHP file actually exists in `wp-includes` or uploads, your web server runs it directly and Attack Log never sees the request. Blocking PHP execution in those folders at the web server is the real protection; see the FAQ.
 * **Forged Cloudflare headers are not detected.** Attack Log checks whether the Cloudflare headers are present, not whether the request really came from Cloudflare's network. An attacker who sends fake headers directly to your server is not logged as a bypass. To close that gap, let your server accept web traffic only from Cloudflare's IP ranges, or use Cloudflare's Authenticated Origin Pulls.
+* **The client IP of a bypass can be fake.** On requests that did not come through Cloudflare, the `CF-Connecting-IP` header is set by whoever sent the request. When the client IP differs from the address that actually connected, the log shows both; trust the connecting address when you write a firewall rule.
 * **Logged-in users are never logged**, including requests made with a stolen account.
 * **Some legitimate tools will show up** as Suspicious User Agent or XML-RPC — uptime monitors, server cron jobs that call `wp-cron.php` with `wget` or `curl`, integrations using HTTP libraries, desktop blogging apps. Add them to the whitelist.
 
@@ -53,7 +56,7 @@ Please read this before relying on the log.
 Attack Log stores IP addresses and User-Agents of the requests it logs. These are personal data under the GDPR.
 
 * Everything stays in your own WordPress database. The plugin sends nothing to any external service.
-* Entries are deleted automatically after the configured period (default 30 days).
+* Entries are deleted automatically after 30 days.
 * Attack Log adds suggested text to your privacy policy page (Settings → Privacy) describing what it logs and why.
 
 You are responsible for mentioning the logging in your privacy policy. This is not legal advice.
@@ -85,13 +88,35 @@ The setting is made once, automatically, from the request that activated the plu
 
 Most likely bypass detection is on but your site is not (or no longer) proxied through Cloudflare — for example the orange cloud is switched off in your Cloudflare DNS settings. Turn the switch off, or fix the Cloudflare setting.
 
+= I see Cloudflare bypasses. What should I do? =
+
+Someone knows your server's real IP address. Configure your server or host firewall to accept web traffic only from Cloudflare's published IP ranges, or turn on Cloudflare's Authenticated Origin Pulls. If the address was leaked recently (for example through an old DNS record or an email header), consider changing it.
+
+= How do I block PHP execution in the uploads folder? =
+
+On Apache, put a `.htaccess` file in `wp-content/uploads` containing:
+
+`<FilesMatch "\.(php\d?|phtml|phar)$">
+Require all denied
+</FilesMatch>`
+
+On nginx, add this inside your `server` block, before the block that passes `.php` files to PHP:
+
+`location ~* ^/wp-content/uploads/.*\.(php\d?|phtml|phar)$ { deny all; }`
+
+Many hosts and security plugins offer the same as a setting. Test your site after making the change.
+
 = Why is my uptime monitor in the log? =
 
 Many monitors and tools use HTTP library User-Agents such as `curl` or `python-requests`. Click **+ IP** or **+ UA** on its row in the log, choose which types the entry applies to, and save. Whitelist entries match exactly.
 
+= Can I keep the log for longer than 30 days? =
+
+Not yet. The retention period is fixed at 30 days in this version.
+
 = Does it slow down my site? =
 
-Requests that don't match any rule cost a few string checks and no database query. Logged requests are written after the page has been generated.
+Requests that don't match any rule cost a few string checks and no database query. Matching requests are written to the database at the very end of the request, after the page has been generated.
 
 = Does it work on multisite? =
 
