@@ -206,7 +206,7 @@ class Repository {
 		$prepared_joins   = $this->build_prepared_request_joins_sql();
 		$order_column     = 'return_code' === $orderby ? 'r.return_code' : 'r.created_at';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Custom plugin tables; the only caller, get_requests(), caches the result; all interpolated fragments were already prepared.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Custom plugin tables; the only caller, get_requests(), caches the result; all interpolated fragments were already prepared.
 		return $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT {$selected_columns}, NULL AS detail FROM %i r {$prepared_joins} ORDER BY {$order_column} {$order_direction}, r.id {$order_direction} LIMIT %d OFFSET %d",
@@ -226,7 +226,7 @@ class Repository {
 		$prepared_joins   = $this->build_prepared_request_joins_sql();
 		$order_column     = 'return_code' === $orderby ? 'r.return_code' : 'e.created_at';
 
-		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Custom plugin tables; the only caller, get_requests(), caches the result; all interpolated fragments were already prepared.
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Custom plugin tables; the only caller, get_requests(), caches the result; all interpolated fragments were already prepared.
 		return $wpdb->get_results(
 			$wpdb->prepare(
 				"SELECT {$selected_columns}, e.detail AS detail FROM %i e INNER JOIN %i r ON r.id = e.request_id {$prepared_joins} WHERE e.error_type_id = %d ORDER BY {$order_column} {$order_direction}, r.id {$order_direction} LIMIT %d OFFSET %d",
@@ -442,7 +442,7 @@ class Repository {
 		$total_requests   = 0;
 
 		do {
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Fresh data is required to select rows for deletion; all interpolated fragments were already prepared; the cache is invalidated in cleanup_orphans().
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Fresh data is required to select rows for deletion; all interpolated fragments were already prepared; the cache is invalidated in cleanup_orphans().
 			$request_ids = $wpdb->get_col(
 				"{$select_statement} {$prepared_condition_sql} {$select_filter} {$limit_clause}"
 			);
@@ -454,7 +454,7 @@ class Repository {
 			$id_placeholders = implode( ',', array_fill( 0, count( $request_ids ), '%d' ) );
 			$id_clause       = $wpdb->prepare( "request_id IN ({$id_placeholders})", $request_ids );
 
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared -- Batched delete on a custom plugin table; all interpolated fragments were already prepared; the cache is invalidated in cleanup_orphans().
+			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter -- Batched delete on a custom plugin table; all interpolated fragments were already prepared; the cache is invalidated in cleanup_orphans().
 			$wpdb->query( "{$delete_statement} {$id_clause} {$delete_filter}" );
 
 			$total_requests += count( $request_ids );

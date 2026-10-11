@@ -20,7 +20,7 @@ function attacklog_uninstall_site(): void {
 	foreach ( $table_suffixes_children_first as $table_suffix ) {
 		$table_name = \AttackLog\Schema::get_table_name( $table_suffix );
 
-		$wpdb->query( "DROP TABLE IF EXISTS {$table_name}" );
+		$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $table_name ) );
 	}
 
 	$option_names = array(
