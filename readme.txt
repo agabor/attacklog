@@ -33,7 +33,6 @@ For each logged request Attack Log stores the time, method, path, status code, c
 = Features =
 
 * Tabs for All and each error type, with request counts.
-* Filter by date range.
 * Cloudflare card: shows whether your current request came through Cloudflare, and a switch to turn bypass detection on or off.
 * Whitelist by exact IP address or exact User-Agent, for all types or selected ones — for example your uptime monitor or office IP. Each log row has buttons to whitelist its IP or User-Agent in one click.
 * Clear one type, or clear the whole log.
@@ -57,9 +56,8 @@ Attack Log stores IP addresses and User-Agents of the requests it logs. These ar
 
 * Everything stays in your own WordPress database. The plugin sends nothing to any external service.
 * Entries are deleted automatically after 30 days.
-* Attack Log adds suggested text to your privacy policy page (Settings → Privacy) describing what it logs and why.
 
-You are responsible for mentioning the logging in your privacy policy. This is not legal advice.
+You are responsible for mentioning the logging in your privacy policy — for example, that IP addresses and User-Agents of suspicious requests are stored for 30 days to protect the site. This is not legal advice.
 
 == Installation ==
 
